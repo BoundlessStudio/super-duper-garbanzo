@@ -1,55 +1,67 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import { 
   Plus, 
   Check,
   Trash2,
   GripVertical
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
-import type { Task, TaskStatus, TaskPriority } from '../types';
+} from 'lucide-react'
+import { useProjectTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../db/hooks'
+import type { Task } from '../db/schema'
 
 interface TaskListProps {
-  projectId: string;
-  tasks: Task[];
+  projectId: string
 }
 
-export function TaskList({ projectId, tasks }: TaskListProps) {
-  const { addTask, updateTask, deleteTask } = useStore();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+export function TaskList({ projectId }: TaskListProps) {
+  const { data: tasks = [] } = useProjectTasks(projectId)
+  const createTask = useCreateTask()
+  const updateTask = useUpdateTask()
+  const deleteTask = useDeleteTask()
+  
+  const [isAdding, setIsAdding] = useState(false)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
 
   const handleAddTask = () => {
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskTitle.trim()) return
     
-    addTask(projectId, {
+    createTask.mutate({
+      projectId,
       title: newTaskTitle.trim(),
       description: '',
-      status: 'pending' as TaskStatus,
-      priority: 'medium' as TaskPriority,
-    });
-    setNewTaskTitle('');
-    setIsAdding(false);
-  };
+      status: 'pending',
+      priority: 'medium',
+    })
+    setNewTaskTitle('')
+    setIsAdding(false)
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleAddTask();
+      handleAddTask()
     } else if (e.key === 'Escape') {
-      setIsAdding(false);
-      setNewTaskTitle('');
+      setIsAdding(false)
+      setNewTaskTitle('')
     }
-  };
+  }
 
   const toggleStatus = (task: Task) => {
-    const newStatus: TaskStatus = task.status === 'completed' ? 'pending' : 'completed';
-    updateTask(projectId, task.id, { status: newStatus });
-  };
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+    updateTask.mutate({ 
+      id: task.id, 
+      projectId, 
+      updates: { status: newStatus } 
+    })
+  }
+
+  const handleDeleteTask = (taskId: string) => {
+    deleteTask.mutate({ taskId, projectId })
+  }
 
   const sortedTasks = [...tasks].sort((a, b) => {
-    if (a.status === 'completed' && b.status !== 'completed') return 1;
-    if (a.status !== 'completed' && b.status === 'completed') return -1;
-    return 0;
-  });
+    if (a.status === 'completed' && b.status !== 'completed') return 1
+    if (a.status !== 'completed' && b.status === 'completed') return -1
+    return 0
+  })
 
   return (
     <div>
@@ -79,8 +91,8 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
           <div className="flex items-center justify-end gap-2 mt-3">
             <button
               onClick={() => {
-                setIsAdding(false);
-                setNewTaskTitle('');
+                setIsAdding(false)
+                setNewTaskTitle('')
               }}
               className="px-3 py-1.5 text-sm text-neutral-500 hover:text-white transition-colors"
             >
@@ -133,7 +145,7 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
               </span>
 
               <button
-                onClick={() => deleteTask(projectId, task.id)}
+                onClick={() => handleDeleteTask(task.id)}
                 className="p-1 text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
               >
                 <Trash2 className="w-4 h-4" />
@@ -143,5 +155,5 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

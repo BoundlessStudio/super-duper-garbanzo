@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Video, Phone, ExternalLink, Eye } from 'lucide-react';
-import type { ProjectSettings } from '../types';
+import type { ProjectSettings } from '../db/schema';
 
 interface Conversation {
   id: string;

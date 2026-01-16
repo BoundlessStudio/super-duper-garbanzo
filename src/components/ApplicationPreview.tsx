@@ -6,7 +6,7 @@ import {
   Smartphone,
   Tablet
 } from 'lucide-react';
-import type { ProjectSettings } from '../types';
+import type { ProjectSettings } from '../db/schema';
 
 interface ApplicationPreviewProps {
   previewUrl: string;

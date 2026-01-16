@@ -1,29 +1,26 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store/useStore';
+import { useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useCreateProject } from '../db/hooks'
 
-export function CreateProject() {
-  const navigate = useNavigate();
-  const { addProject } = useStore();
-  const [name, setName] = useState('');
+export const Route = createFileRoute('/new')({
+  component: CreateProjectPage,
+})
+
+function CreateProjectPage() {
+  const navigate = useNavigate()
+  const createProject = useCreateProject()
+  const [name, setName] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     
     if (!name.trim()) {
-      return;
+      return
     }
 
-    const projectId = addProject({
-      name: name.trim(),
-      description: '',
-      status: 'active',
-      previewUrl: '',
-      owner: 'Project Owner',
-      teamMembers: [],
-    });
-    navigate(`/${projectId}`);
-  };
+    const project = createProject.mutate(name.trim())
+    navigate({ to: '/$projectId', params: { projectId: project.id } })
+  }
 
   return (
     <div className="max-w-md mx-auto animate-fade-in pt-16">
@@ -48,7 +45,7 @@ export function CreateProject() {
         <div className="flex items-center justify-end gap-3 mt-6">
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate({ to: '/' })}
             className="px-4 py-2 text-neutral-400 hover:text-white transition-colors"
           >
             Cancel
@@ -63,5 +60,5 @@ export function CreateProject() {
         </div>
       </form>
     </div>
-  );
+  )
 }

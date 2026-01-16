@@ -1,5 +1,5 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import { 
   ArrowLeft, 
   ListTodo, 
@@ -7,30 +7,48 @@ import {
   Monitor, 
   Settings,
   Trash2
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { TaskList } from '../components/TaskList';
-import { MeetingEmbed } from '../components/MeetingEmbed';
-import { ApplicationPreview } from '../components/ApplicationPreview';
-import { ControlPanel } from '../components/ControlPanel';
+} from 'lucide-react'
+import { useProject, useProjectTasks, useUpdateProject, useDeleteProject, useProjectSettings, useUpdateSettings } from '../db/hooks'
+import { TaskList } from '../components/TaskList'
+import { MeetingEmbed } from '../components/MeetingEmbed'
+import { ApplicationPreview } from '../components/ApplicationPreview'
+import { ControlPanel } from '../components/ControlPanel'
 
-type TabId = 'tasks' | 'meeting' | 'preview' | 'settings';
+type TabId = 'tasks' | 'meeting' | 'preview' | 'settings'
 
-export function ProjectDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { projects, updateProject, deleteProject, updateProjectSettings, setCurrentProject } = useStore();
+export const Route = createFileRoute('/$projectId')({
+  component: ProjectDetailPage,
+  notFoundComponent: () => (
+    <div className="text-center py-20">
+      <p className="text-neutral-500 mb-4">Project not found</p>
+      <Link to="/" className="text-white hover:text-neutral-300 transition-colors">
+        Back to Projects
+      </Link>
+    </div>
+  ),
+})
+
+function ProjectDetailPage() {
+  const { projectId } = Route.useParams()
+  const navigate = useNavigate()
   
-  const [activeTab, setActiveTab] = useState<TabId>('tasks');
+  const { data: project, isLoading: projectLoading } = useProject(projectId)
+  const { data: tasks = [] } = useProjectTasks(projectId)
+  const { data: settings } = useProjectSettings(projectId)
   
-  const project = projects.find(p => p.id === id);
+  const updateProject = useUpdateProject()
+  const deleteProject = useDeleteProject()
+  const updateSettings = useUpdateSettings()
+  
+  const [activeTab, setActiveTab] = useState<TabId>('tasks')
 
-  useEffect(() => {
-    if (id) {
-      setCurrentProject(id);
-    }
-    return () => setCurrentProject(null);
-  }, [id, setCurrentProject]);
+  if (projectLoading) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-neutral-500">Loading project...</p>
+      </div>
+    )
+  }
 
   if (!project) {
     return (
@@ -40,7 +58,7 @@ export function ProjectDetail() {
           Back to Projects
         </Link>
       </div>
-    );
+    )
   }
 
   const tabs = [
@@ -48,17 +66,36 @@ export function ProjectDetail() {
     { id: 'meeting' as const, label: 'Meeting', icon: Video },
     { id: 'preview' as const, label: 'Preview', icon: Monitor },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
-  ];
+  ]
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this project?')) {
-      deleteProject(project.id);
-      navigate('/');
+      deleteProject.mutate(project.id)
+      navigate({ to: '/' })
     }
-  };
+  }
 
-  const completedTasks = project.tasks.filter(t => t.status === 'completed').length;
-  const totalTasks = project.tasks.length;
+  const completedTasks = tasks.filter(t => t.status === 'completed').length
+  const totalTasks = tasks.length
+
+  // Default settings if not loaded yet
+  const currentSettings = settings || {
+    projectId: project.id,
+    agentEnabled: true,
+    agentModel: 'gpt-4',
+    agentAutoRun: false,
+    agentWebhookUrl: '',
+    githubRepo: '',
+    githubBranch: 'main',
+    githubAutoSync: false,
+    githubToken: '',
+    sandboxUrl: '',
+    sandboxType: 'codesandbox' as const,
+    sandboxAutoRefresh: true,
+    meetingProvider: 'jitsi' as const,
+    meetingUrl: '',
+    meetingAutoRecord: false,
+  }
 
   return (
     <div className="animate-fade-in">
@@ -66,7 +103,7 @@ export function ProjectDetail() {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate({ to: '/' })}
             className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-900 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -122,32 +159,32 @@ export function ProjectDetail() {
       {/* Tab Content */}
       <div>
         {activeTab === 'tasks' && (
-          <TaskList projectId={project.id} tasks={project.tasks} />
+          <TaskList projectId={project.id} />
         )}
         
         {activeTab === 'meeting' && (
           <MeetingEmbed 
-            settings={project.settings}
-            onUpdateSettings={(updates) => updateProjectSettings(project.id, updates)}
+            settings={currentSettings}
+            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
           />
         )}
         
         {activeTab === 'preview' && (
           <ApplicationPreview
             previewUrl={project.previewUrl}
-            settings={project.settings}
-            onUpdatePreviewUrl={(url) => updateProject(project.id, { previewUrl: url })}
-            onUpdateSettings={(updates) => updateProjectSettings(project.id, updates)}
+            settings={currentSettings}
+            onUpdatePreviewUrl={(url) => updateProject.mutate({ id: project.id, updates: { previewUrl: url } })}
+            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
           />
         )}
         
         {activeTab === 'settings' && (
           <ControlPanel
-            settings={project.settings}
-            onUpdateSettings={(updates) => updateProjectSettings(project.id, updates)}
+            settings={currentSettings}
+            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
           />
         )}
       </div>
     </div>
-  );
+  )
 }
