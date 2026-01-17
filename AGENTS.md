@@ -31,7 +31,6 @@ src/
 │   ├── schema.ts        # Zod schemas and types
 │   ├── collections.ts   # TanStack DB collections
 │   ├── hooks.ts         # React hooks for data operations
-│   └── migrate.ts       # Legacy data migration
 ├── routes/              # TanStack Router file-based routes
 │   ├── __root.tsx       # Root layout
 │   ├── index.tsx        # / - Projects dashboard
@@ -215,7 +214,6 @@ Legacy Zustand data (`customware-portal-storage`) is automatically migrated on f
 
 When testing or developing:
 - Clear localStorage to reset data
-- The migration runs once and removes old storage
 - Collections sync across browser tabs via storage events
 - DevTools available at bottom-right in development
 
