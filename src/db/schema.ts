@@ -27,27 +27,51 @@ export const projectSchema = z.object({
   teamMembers: z.array(z.string()),
 })
 
+// Claude Skill schema
+export const claudeSkillSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+})
+
+export type ClaudeSkill = z.infer<typeof claudeSkillSchema>
+
 // Project settings schema
 export const projectSettingsSchema = z.object({
   projectId: z.string(),
-  // Background Agent Settings
+  
+  // Agent Settings (Status & Control)
   agentEnabled: z.boolean(),
-  agentModel: z.string(),
-  agentAutoRun: z.boolean(),
-  agentWebhookUrl: z.string(),
-  // GitHub Settings
+  agentCurrentTask: z.string(),
+  agentLastAction: z.string(),
+  agentLastActionAt: z.string(),
+  agentSkills: z.array(claudeSkillSchema),
+  
+  // GitHub Settings (Repository & Integration)
   githubRepo: z.string(),
-  githubBranch: z.string(),
-  githubAutoSync: z.boolean(),
-  githubToken: z.string(),
-  // Sandbox Settings
-  sandboxUrl: z.string(),
-  sandboxType: z.enum(['codesandbox', 'stackblitz', 'replit', 'custom']),
-  sandboxAutoRefresh: z.boolean(),
+  githubUseIssues: z.boolean(),
+  githubUsePRs: z.boolean(),
+  
+  // Sandbox Settings (Status & Control)
+  sandboxRunning: z.boolean(),
+  sandboxEnvVars: z.record(z.string(), z.string()),
+  
+  // Notification Settings (Email Toggles)
+  notifyOnNewTasks: z.boolean(),
+  notifyOnTaskComplete: z.boolean(),
+  notifyOnBuildComplete: z.boolean(),
+  notifyOnMeetingComplete: z.boolean(),
+  
+  // Preview Settings (Display & Build Triggers)
+  previewDefaultDevice: z.enum(['mobile', 'tablet', 'desktop']),
+  buildOnTaskComplete: z.boolean(),
+  buildOnMeetingComplete: z.boolean(),
+  
   // Meeting Settings
   meetingProvider: z.enum(['jitsi', 'zoom', 'teams', 'custom']),
   meetingUrl: z.string(),
-  meetingAutoRecord: z.boolean(),
 })
 
 export type Task = z.infer<typeof taskSchema>
@@ -55,18 +79,34 @@ export type Project = z.infer<typeof projectSchema>
 export type ProjectSettings = z.infer<typeof projectSettingsSchema>
 
 export const defaultProjectSettings: Omit<ProjectSettings, 'projectId'> = {
-  agentEnabled: true,
-  agentModel: 'gpt-4',
-  agentAutoRun: false,
-  agentWebhookUrl: '',
+  // Agent Settings
+  agentEnabled: false,
+  agentCurrentTask: '',
+  agentLastAction: '',
+  agentLastActionAt: '',
+  agentSkills: [],
+  
+  // GitHub Settings
   githubRepo: '',
-  githubBranch: 'main',
-  githubAutoSync: false,
-  githubToken: '',
-  sandboxUrl: '',
-  sandboxType: 'codesandbox',
-  sandboxAutoRefresh: true,
+  githubUseIssues: false,
+  githubUsePRs: false,
+  
+  // Sandbox Settings
+  sandboxRunning: false,
+  sandboxEnvVars: {},
+  
+  // Notification Settings
+  notifyOnNewTasks: true,
+  notifyOnTaskComplete: true,
+  notifyOnBuildComplete: true,
+  notifyOnMeetingComplete: false,
+  
+  // Preview Settings
+  previewDefaultDevice: 'desktop',
+  buildOnTaskComplete: false,
+  buildOnMeetingComplete: false,
+  
+  // Meeting Settings
   meetingProvider: 'jitsi',
   meetingUrl: '',
-  meetingAutoRecord: false,
 }

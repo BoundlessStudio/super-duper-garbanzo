@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Video, Phone, ExternalLink, Eye } from 'lucide-react';
 import type { ProjectSettings } from '../db/schema';
+
+// Generate a stable room ID using crypto
+const generateRoomId = () => crypto.randomUUID().slice(0, 8);
 
 interface Conversation {
   id: string;
@@ -27,10 +30,10 @@ export function MeetingEmbed({ settings, onUpdateSettings }: MeetingEmbedProps) 
     }
   ]);
 
-  const getMeetingUrl = () => {
+  const getMeetingUrl = useCallback(() => {
     if (!settings.meetingUrl) {
       // Generate a random room name if none set
-      const roomName = `customware-${Math.random().toString(36).substring(2, 10)}`;
+      const roomName = `customware-${generateRoomId()}`;
       onUpdateSettings({ meetingUrl: roomName });
       return `https://meet.jit.si/${roomName}`;
     }
@@ -39,7 +42,7 @@ export function MeetingEmbed({ settings, onUpdateSettings }: MeetingEmbedProps) 
       return `https://meet.jit.si/${settings.meetingUrl}`;
     }
     return settings.meetingUrl;
-  };
+  }, [settings.meetingUrl, settings.meetingProvider, onUpdateSettings]);
 
   const handleStartMeeting = () => {
     const newConversation: Conversation = {

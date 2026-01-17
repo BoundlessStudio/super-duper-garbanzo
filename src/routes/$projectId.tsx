@@ -81,20 +81,31 @@ function ProjectDetailPage() {
   // Default settings if not loaded yet
   const currentSettings = settings || {
     projectId: project.id,
-    agentEnabled: true,
-    agentModel: 'gpt-4',
-    agentAutoRun: false,
-    agentWebhookUrl: '',
+    // Agent Settings
+    agentEnabled: false,
+    agentCurrentTask: '',
+    agentLastAction: '',
+    agentLastActionAt: '',
+    agentSkills: [],
+    // GitHub Settings
     githubRepo: '',
-    githubBranch: 'main',
-    githubAutoSync: false,
-    githubToken: '',
-    sandboxUrl: '',
-    sandboxType: 'codesandbox' as const,
-    sandboxAutoRefresh: true,
+    githubUseIssues: false,
+    githubUsePRs: false,
+    // Sandbox Settings
+    sandboxRunning: false,
+    sandboxEnvVars: {},
+    // Notification Settings
+    notifyOnNewTasks: true,
+    notifyOnTaskComplete: true,
+    notifyOnBuildComplete: true,
+    notifyOnMeetingComplete: false,
+    // Preview Settings
+    previewDefaultDevice: 'desktop' as const,
+    buildOnTaskComplete: false,
+    buildOnMeetingComplete: false,
+    // Meeting Settings
     meetingProvider: 'jitsi' as const,
     meetingUrl: '',
-    meetingAutoRecord: false,
   }
 
   return (

@@ -22,11 +22,11 @@ export function ApplicationPreview({
   settings, 
   onUpdatePreviewUrl,
 }: ApplicationPreviewProps) {
-  const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
-  const [localUrl, setLocalUrl] = useState(previewUrl || settings.sandboxUrl || '');
+  const [deviceSize, setDeviceSize] = useState<DeviceSize>(settings.previewDefaultDevice || 'desktop');
+  const [localUrl, setLocalUrl] = useState(previewUrl || '');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const displayUrl = previewUrl || settings.sandboxUrl;
+  const displayUrl = previewUrl;
 
   const getDeviceWidth = () => {
     switch (deviceSize) {
