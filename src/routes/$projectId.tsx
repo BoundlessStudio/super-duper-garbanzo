@@ -5,13 +5,10 @@ import {
   ListTodo, 
   Video, 
   Monitor, 
-  Settings
 } from 'lucide-react'
-import { useProject, useProjectTasks, useUpdateProject, useDeleteProject, useProjectSettings, useUpdateSettings } from '../db/hooks'
+import { useProject, useProjectTasks } from '../db/hooks'
 import { TaskList } from '../components/TaskList'
-import { MeetingEmbed } from '../components/MeetingEmbed'
-import { ApplicationPreview } from '../components/ApplicationPreview'
-import { ControlPanel } from '../components/ControlPanel'
+
 
 type TabId = 'tasks' | 'meeting' | 'preview' | 'settings'
 
@@ -33,12 +30,7 @@ function ProjectDetailPage() {
   
   const { data: project, isLoading: projectLoading } = useProject(projectId)
   const { data: tasks = [] } = useProjectTasks(projectId)
-  const { data: settings } = useProjectSettings(projectId)
-  
-  const updateProject = useUpdateProject()
-  const deleteProject = useDeleteProject()
-  const updateSettings = useUpdateSettings()
-  
+
   const [activeTab, setActiveTab] = useState<TabId>('tasks')
 
   if (projectLoading) {
@@ -62,53 +54,12 @@ function ProjectDetailPage() {
 
   const tabs = [
     { id: 'tasks' as const, label: 'Tasks', icon: ListTodo },
-    { id: 'meeting' as const, label: 'Meeting', icon: Video },
-    { id: 'preview' as const, label: 'Preview', icon: Monitor },
-    { id: 'settings' as const, label: 'Settings', icon: Settings },
   ]
 
-  const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this project?')) {
-      deleteProject.mutate(project.id)
-      navigate({ to: '/' })
-    }
-  }
 
   const completedTasks = tasks.filter(t => t.status === 'completed').length
   const totalTasks = tasks.length
 
-  // Default settings if not loaded yet
-  const currentSettings = settings || {
-    projectId: project.id,
-    // Agent Settings
-    agentEnabled: false,
-    agentCurrentTask: '',
-    agentLastAction: '',
-    agentLastActionAt: '',
-    agentSkills: [],
-    // Repository Settings
-    repoProvider: 'local' as const,
-    repoUrl: '',
-    repoUseIssues: false,
-    repoUsePRs: false,
-    // Sandbox Settings
-    sandboxRunning: false,
-    sandboxEnvVars: {},
-    // Notification Settings
-    notifyOnNewTasks: true,
-    notifyOnTaskComplete: true,
-    notifyOnBuildComplete: true,
-    notifyOnMeetingComplete: false,
-    // Preview Settings
-    previewDefaultDevice: 'desktop' as const,
-    buildOnTaskComplete: false,
-    buildOnMeetingComplete: false,
-    // Meeting Settings
-    meetingProvider: 'jitsi' as const,
-    meetingUrl: '',
-    // Team Members
-    teamMembers: [],
-  }
 
   return (
     <div className="animate-fade-in">
@@ -140,6 +91,24 @@ function ProjectDetailPage() {
             </p>
           </div>
         </div>
+        
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab('meeting')}
+            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
+          >
+            <Video className="w-4 h-4" />
+            Start Meeting
+          </button>
+          <button
+            onClick={() => setActiveTab('preview')}
+            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
+          >
+            <Monitor className="w-4 h-4" />
+            Preview Application
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -163,33 +132,21 @@ function ProjectDetailPage() {
       </div>
 
       {/* Tab Content */}
-      <div>
+      <div className="pb-8">
         {activeTab === 'tasks' && (
-          <TaskList projectId={project.id} />
+          <TaskList tasks={tasks} />
         )}
-        
         {activeTab === 'meeting' && (
-          <MeetingEmbed 
-            settings={currentSettings}
-            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
-          />
+          <div className="text-center py-20">
+            <Video className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
+            <p className="text-neutral-500">Meeting feature coming soon</p>
+          </div>
         )}
-        
         {activeTab === 'preview' && (
-          <ApplicationPreview
-            previewUrl={project.previewUrl}
-            settings={currentSettings}
-            onUpdatePreviewUrl={(url) => updateProject.mutate({ id: project.id, updates: { previewUrl: url } })}
-            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
-          />
-        )}
-        
-        {activeTab === 'settings' && (
-          <ControlPanel
-            settings={currentSettings}
-            onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
-            onDeleteProject={handleDelete}
-          />
+          <div className="text-center py-20">
+            <Monitor className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
+            <p className="text-neutral-500">Preview feature coming soon</p>
+          </div>
         )}
       </div>
     </div>
