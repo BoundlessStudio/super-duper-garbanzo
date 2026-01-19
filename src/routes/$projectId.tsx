@@ -106,6 +106,8 @@ function ProjectDetailPage() {
     // Meeting Settings
     meetingProvider: 'jitsi' as const,
     meetingUrl: '',
+    // Team Members
+    teamMembers: [],
   }
 
   return (

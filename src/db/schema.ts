@@ -38,6 +38,18 @@ export const claudeSkillSchema = z.object({
 
 export type ClaudeSkill = z.infer<typeof claudeSkillSchema>
 
+// Team Member schema
+export const teamMemberSchema = z.object({
+  id: z.string(),
+  username: z.string(), // @mention handle
+  email: z.string().optional(), // Present if logged in
+  status: z.enum(['invited', 'active']),
+  invitedAt: z.string(),
+  joinedAt: z.string().optional(),
+})
+
+export type TeamMember = z.infer<typeof teamMemberSchema>
+
 // Project settings schema
 export const projectSettingsSchema = z.object({
   projectId: z.string(),
@@ -73,6 +85,9 @@ export const projectSettingsSchema = z.object({
   // Meeting Settings
   meetingProvider: z.enum(['jitsi', 'zoom', 'teams', 'custom']),
   meetingUrl: z.string(),
+  
+  // Team Members
+  teamMembers: z.array(teamMemberSchema),
 })
 
 export type Task = z.infer<typeof taskSchema>
@@ -111,4 +126,7 @@ export const defaultProjectSettings: Omit<ProjectSettings, 'projectId'> = {
   // Meeting Settings
   meetingProvider: 'jitsi',
   meetingUrl: '',
+  
+  // Team Members
+  teamMembers: [],
 }

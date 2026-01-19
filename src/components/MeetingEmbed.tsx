@@ -108,7 +108,7 @@ export function MeetingEmbed({ settings, onUpdateSettings }: MeetingEmbedProps) 
               <Video className="w-7 h-7 text-neutral-500" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2">Virtual Meeting Room</h3>
-            <p className="text-neutral-500 mb-6">Connect with your team in real-time</p>
+            <p className="text-neutral-500 mb-6">Connect with your consult any time</p>
             <button
               onClick={handleStartMeeting}
               className="px-5 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors flex items-center gap-2"
