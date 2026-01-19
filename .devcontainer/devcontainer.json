@@ -1,0 +1,10 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "claude-code",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:dev-22",
+	"mounts": [
+		"source=claude-code-config,target=/home/node/.claude,type=volume"
+	],
+	"postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash"
+}
