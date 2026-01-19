@@ -5,8 +5,7 @@ import {
   ListTodo, 
   Video, 
   Monitor, 
-  Settings,
-  Trash2
+  Settings
 } from 'lucide-react'
 import { useProject, useProjectTasks, useUpdateProject, useDeleteProject, useProjectSettings, useUpdateSettings } from '../db/hooks'
 import { TaskList } from '../components/TaskList'
@@ -87,10 +86,11 @@ function ProjectDetailPage() {
     agentLastAction: '',
     agentLastActionAt: '',
     agentSkills: [],
-    // GitHub Settings
-    githubRepo: '',
-    githubUseIssues: false,
-    githubUsePRs: false,
+    // Repository Settings
+    repoProvider: 'local' as const,
+    repoUrl: '',
+    repoUseIssues: false,
+    repoUsePRs: false,
     // Sandbox Settings
     sandboxRunning: false,
     sandboxEnvVars: {},
@@ -138,13 +138,6 @@ function ProjectDetailPage() {
             </p>
           </div>
         </div>
-        
-        <button
-          onClick={handleDelete}
-          className="p-2 text-neutral-500 hover:text-red-400 hover:bg-neutral-900 rounded-lg transition-colors"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Tabs */}
@@ -193,6 +186,7 @@ function ProjectDetailPage() {
           <ControlPanel
             settings={currentSettings}
             onUpdateSettings={(updates) => updateSettings.mutate({ projectId: project.id, updates })}
+            onDeleteProject={handleDelete}
           />
         )}
       </div>

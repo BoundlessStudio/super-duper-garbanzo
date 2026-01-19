@@ -17,13 +17,17 @@ import {
   Upload,
   FileText,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Camera,
+  History,
+  Trash2
 } from 'lucide-react';
 import type { ProjectSettings, ClaudeSkill } from '../db/schema';
 
 interface ControlPanelProps {
   settings: ProjectSettings;
   onUpdateSettings: (updates: Partial<ProjectSettings>) => void;
+  onDeleteProject: () => void;
 }
 
 // Reusable Toggle Switch Component
@@ -238,7 +242,7 @@ function SkillsList({
   );
 }
 
-export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) {
+export function ControlPanel({ settings, onUpdateSettings, onDeleteProject }: ControlPanelProps) {
   const handleChange = <K extends keyof ProjectSettings>(key: K, value: ProjectSettings[K]) => {
     onUpdateSettings({ [key]: value });
   };
@@ -252,6 +256,129 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
 
   return (
     <div className="space-y-6">
+
+      {/* ========== NOTIFICATIONS SECTION ========== */}
+      <div className="card p-5">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+            <Bell className="w-5 h-5 text-neutral-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-medium">Email Notifications</h3>
+            <p className="text-sm text-neutral-500">Configure notification preferences</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">New tasks assigned</span>
+            <Toggle
+              checked={settings.notifyOnNewTasks}
+              onChange={(checked) => handleChange('notifyOnNewTasks', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Task completed</span>
+            <Toggle
+              checked={settings.notifyOnTaskComplete}
+              onChange={(checked) => handleChange('notifyOnTaskComplete', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Build completed</span>
+            <Toggle
+              checked={settings.notifyOnBuildComplete}
+              onChange={(checked) => handleChange('notifyOnBuildComplete', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Meeting completed</span>
+            <Toggle
+              checked={settings.notifyOnMeetingComplete}
+              onChange={(checked) => handleChange('notifyOnMeetingComplete', checked)}
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* ========== REPOSITORY SECTION ========== */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+              <GitBranch className="w-5 h-5 text-neutral-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-medium">Repository</h3>
+              <p className="text-sm text-neutral-500">Source control & integration settings</p>
+            </div>
+          </div>
+          {settings.repoProvider !== 'local' && settings.repoUrl && (
+            <a
+              href={settings.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 text-neutral-500 hover:text-white transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-neutral-400 mb-1.5">Provider</label>
+            <select
+              value={settings.repoProvider}
+              onChange={(e) => handleChange('repoProvider', e.target.value as ProjectSettings['repoProvider'])}
+              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-neutral-700"
+            >
+              <option value="local">Local</option>
+              <option value="github">GitHub</option>
+              <option value="azure">Azure DevOps</option>
+              <option value="gitlab">GitLab</option>
+              <option value="bitbucket">Bitbucket</option>
+            </select>
+          </div>
+
+          {settings.repoProvider !== 'local' && (
+            <>
+              <div>
+                <label className="block text-sm text-neutral-400 mb-1.5">Repository URL</label>
+                <input
+                  type="text"
+                  value={settings.repoUrl}
+                  onChange={(e) => handleChange('repoUrl', e.target.value)}
+                  placeholder="https://github.com/owner/repository"
+                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-neutral-700"
+                />
+              </div>
+
+              <div className="pt-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white">Sync with Issues</span>
+                  <Toggle
+                    checked={settings.repoUseIssues}
+                    onChange={(checked) => handleChange('repoUseIssues', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white">Create & Review PRs</span>
+                  <Toggle
+                    checked={settings.repoUsePRs}
+                    onChange={(checked) => handleChange('repoUsePRs', checked)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* ========== AGENT SECTION ========== */}
       <div className="card p-5">
         <div className="flex items-start justify-between mb-4">
@@ -260,7 +387,7 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
               <Bot className="w-5 h-5 text-neutral-400" />
             </div>
             <div>
-              <h3 className="text-white font-medium">Background Agent</h3>
+              <h3 className="text-white font-medium">AI Agent</h3>
               <p className="text-sm text-neutral-500">AI-powered development assistant</p>
             </div>
           </div>
@@ -329,70 +456,34 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
         )}
 
         {/* Claude Skills */}
-        <div>
+        <div className="mb-4">
           <label className="block text-sm text-neutral-400 mb-2">Claude Skills</label>
           <SkillsList
             skills={settings.agentSkills}
             onChange={(skills) => handleChange('agentSkills', skills)}
           />
         </div>
-      </div>
 
-      {/* ========== GITHUB SECTION ========== */}
-      <div className="card p-5">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
-              <GitBranch className="w-5 h-5 text-neutral-400" />
-            </div>
-            <div>
-              <h3 className="text-white font-medium">GitHub Repository</h3>
-              <p className="text-sm text-neutral-500">Repository & integration settings</p>
-            </div>
-          </div>
-          {settings.githubRepo && (
-            <a
-              href={`https://github.com/${settings.githubRepo}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 text-neutral-500 hover:text-white transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-neutral-400 mb-1.5">Repository</label>
-            <input
-              type="text"
-              value={settings.githubRepo}
-              onChange={(e) => handleChange('githubRepo', e.target.value)}
-              placeholder="owner/repository"
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-neutral-700"
+        {/* Build Triggers */}
+        <div className="pt-4 border-t border-neutral-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Build on task complete</span>
+            <Toggle
+              checked={settings.buildOnTaskComplete}
+              onChange={(checked) => handleChange('buildOnTaskComplete', checked)}
             />
           </div>
 
-          <div className="pt-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white">Sync with GitHub Issues</span>
-              <Toggle
-                checked={settings.githubUseIssues}
-                onChange={(checked) => handleChange('githubUseIssues', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white">Create & Review PRs</span>
-              <Toggle
-                checked={settings.githubUsePRs}
-                onChange={(checked) => handleChange('githubUsePRs', checked)}
-              />
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Build on meeting complete</span>
+            <Toggle
+              checked={settings.buildOnMeetingComplete}
+              onChange={(checked) => handleChange('buildOnMeetingComplete', checked)}
+            />
           </div>
         </div>
       </div>
+
 
       {/* ========== SANDBOX SECTION ========== */}
       <div className="card p-5">
@@ -402,7 +493,7 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
               <Box className="w-5 h-5 text-neutral-400" />
             </div>
             <div>
-              <h3 className="text-white font-medium">Sandbox Environment</h3>
+              <h3 className="text-white font-medium">Application Environment</h3>
               <p className="text-sm text-neutral-500">Development container settings</p>
             </div>
           </div>
@@ -431,6 +522,18 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
               </>
             )}
           </button>
+          <button
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-800 text-white rounded-lg text-sm hover:bg-neutral-700 transition-colors"
+          >
+            <Camera className="w-4 h-4" />
+            Snapshot
+          </button>
+          <button
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-800 text-white rounded-lg text-sm hover:bg-neutral-700 transition-colors"
+          >
+            <History className="w-4 h-4" />
+            Rollback
+          </button>
         </div>
 
         <div>
@@ -442,52 +545,7 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
         </div>
       </div>
 
-      {/* ========== NOTIFICATIONS SECTION ========== */}
-      <div className="card p-5">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-neutral-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-medium">Email Notifications</h3>
-            <p className="text-sm text-neutral-500">Configure notification preferences</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white">New tasks assigned</span>
-            <Toggle
-              checked={settings.notifyOnNewTasks}
-              onChange={(checked) => handleChange('notifyOnNewTasks', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white">Task completed</span>
-            <Toggle
-              checked={settings.notifyOnTaskComplete}
-              onChange={(checked) => handleChange('notifyOnTaskComplete', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white">Build completed</span>
-            <Toggle
-              checked={settings.notifyOnBuildComplete}
-              onChange={(checked) => handleChange('notifyOnBuildComplete', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white">Meeting completed</span>
-            <Toggle
-              checked={settings.notifyOnMeetingComplete}
-              onChange={(checked) => handleChange('notifyOnMeetingComplete', checked)}
-            />
-          </div>
-        </div>
-      </div>
+      
 
       {/* ========== PREVIEW SECTION ========== */}
       <div className="card p-5">
@@ -497,7 +555,7 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
           </div>
           <div>
             <h3 className="text-white font-medium">Preview Settings</h3>
-            <p className="text-sm text-neutral-500">Display and build triggers</p>
+            <p className="text-sm text-neutral-500">Display defaults</p>
           </div>
         </div>
 
@@ -540,25 +598,32 @@ export function ControlPanel({ settings, onUpdateSettings }: ControlPanelProps) 
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="pt-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white">Build on task complete</span>
-              <Toggle
-                checked={settings.buildOnTaskComplete}
-                onChange={(checked) => handleChange('buildOnTaskComplete', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white">Build on meeting complete</span>
-              <Toggle
-                checked={settings.buildOnMeetingComplete}
-                onChange={(checked) => handleChange('buildOnMeetingComplete', checked)}
-              />
-            </div>
+      {/* ========== DANGER ZONE ========== */}
+      <div className="card p-5 border border-red-500/20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <Trash2 className="w-5 h-5 text-red-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-medium">Danger Zone</h3>
+            <p className="text-sm text-neutral-500">Irreversible actions</p>
           </div>
         </div>
+
+        <p className="text-sm text-neutral-400 mb-4">
+          Once you delete this project, there is no going back. All tasks, settings, and data will be permanently removed.
+        </p>
+
+        <button
+          onClick={onDeleteProject}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-sm hover:bg-red-500/20 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Project
+        </button>
       </div>
     </div>
   );

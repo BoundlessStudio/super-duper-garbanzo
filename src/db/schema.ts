@@ -49,10 +49,11 @@ export const projectSettingsSchema = z.object({
   agentLastActionAt: z.string(),
   agentSkills: z.array(claudeSkillSchema),
   
-  // GitHub Settings (Repository & Integration)
-  githubRepo: z.string(),
-  githubUseIssues: z.boolean(),
-  githubUsePRs: z.boolean(),
+  // Repository Settings (Provider & Integration)
+  repoProvider: z.enum(['local', 'github', 'azure', 'gitlab', 'bitbucket']),
+  repoUrl: z.string(),
+  repoUseIssues: z.boolean(),
+  repoUsePRs: z.boolean(),
   
   // Sandbox Settings (Status & Control)
   sandboxRunning: z.boolean(),
@@ -86,10 +87,11 @@ export const defaultProjectSettings: Omit<ProjectSettings, 'projectId'> = {
   agentLastActionAt: '',
   agentSkills: [],
   
-  // GitHub Settings
-  githubRepo: '',
-  githubUseIssues: false,
-  githubUsePRs: false,
+  // Repository Settings
+  repoProvider: 'local',
+  repoUrl: '',
+  repoUseIssues: false,
+  repoUsePRs: false,
   
   // Sandbox Settings
   sandboxRunning: false,
