@@ -10,7 +10,7 @@ import { useProject, useProjectTasks } from '../db/hooks'
 import { TaskList } from '../components/TaskList'
 
 
-type TabId = 'tasks' | 'meeting' | 'preview' | 'settings'
+type TabId = 'tasks'
 
 export const Route = createFileRoute('/$projectId')({
   component: ProjectDetailPage,
@@ -94,20 +94,24 @@ function ProjectDetailPage() {
         
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveTab('meeting')}
+          <a
+            href="https://www.example.com"
+            target="_blank"
+            rel="noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
           >
             <Video className="w-4 h-4" />
             Start Meeting
-          </button>
-          <button
-            onClick={() => setActiveTab('preview')}
+          </a>
+          <a
+            href="https://www.example.com"
+            target="_blank"
+            rel="noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
           >
             <Monitor className="w-4 h-4" />
             Preview Application
-          </button>
+          </a>
         </div>
       </div>
 
@@ -135,18 +139,6 @@ function ProjectDetailPage() {
       <div className="pb-8">
         {activeTab === 'tasks' && (
           <TaskList tasks={tasks} />
-        )}
-        {activeTab === 'meeting' && (
-          <div className="text-center py-20">
-            <Video className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
-            <p className="text-neutral-500">Meeting feature coming soon</p>
-          </div>
-        )}
-        {activeTab === 'preview' && (
-          <div className="text-center py-20">
-            <Monitor className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
-            <p className="text-neutral-500">Preview feature coming soon</p>
-          </div>
         )}
       </div>
     </div>

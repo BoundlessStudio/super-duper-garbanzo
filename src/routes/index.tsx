@@ -108,7 +108,7 @@ function ProjectCard({ project }: { project: { id: string; name: string; descrip
       </div>
 
       {/* Footer */}
-      <div className="pt-4 border-t border-neutral-800">
+      <div className="pt-4 border-neutral-800">
         <span className="text-xs text-neutral-600">
           Created {new Date(project.createdAt).toLocaleDateString()}
         </span>
