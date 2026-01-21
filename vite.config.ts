@@ -10,4 +10,11 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  server: {
+    allowedHosts: [
+      'eneida-fizzier-predeliberately.ngrok-free.dev',
+      '.ngrok-free.dev', // Allow all ngrok-free.dev subdomains
+      '.ngrok.io', // Allow all ngrok.io subdomains
+    ],
+  },
 })

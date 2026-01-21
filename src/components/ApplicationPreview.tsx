@@ -4,23 +4,38 @@ import {
   RefreshCw, 
   ExternalLink,
   Smartphone,
-  Tablet
+  Tablet,
+  Play,
+  Pause,
+  Camera,
+  History,
+  Upload,
+  Copy
 } from 'lucide-react';
 import type { ProjectSettings } from '../db/schema';
 
 interface ApplicationPreviewProps {
   previewUrl: string;
   settings: ProjectSettings;
+  isRunning: boolean;
+  publishedAt?: string;
   onUpdatePreviewUrl: (url: string) => void;
-  onUpdateSettings: (updates: Partial<ProjectSettings>) => void;
+  onToggleRunning: () => void;
+  onToggleEnvironment: () => void;
+  onPublish: () => void;
 }
 
 type DeviceSize = 'mobile' | 'tablet' | 'desktop';
 
 export function ApplicationPreview({ 
   previewUrl, 
-  settings, 
+  settings,
+  isRunning,
+  publishedAt,
   onUpdatePreviewUrl,
+  onToggleRunning,
+  onToggleEnvironment,
+  onPublish,
 }: ApplicationPreviewProps) {
   const [deviceSize, setDeviceSize] = useState<DeviceSize>(settings.previewDefaultDevice || 'desktop');
   const [localUrl, setLocalUrl] = useState(previewUrl || '');
@@ -52,108 +67,172 @@ export function ApplicationPreview({
     }
   };
 
+  const isDevelopment = settings.activeEnvironment === 'development';
+  const hasPublished = !!publishedAt;
+
   return (
     <div>
       {/* Top Toolbar */}
-      <div className="flex items-center gap-3 mb-4">
-        {/* URL Input */}
-        <form onSubmit={handleUrlSubmit} className="flex-1">
-          <input
-            type="text"
-            value={localUrl}
-            onChange={(e) => setLocalUrl(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="https://example.com/preview"
-            className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
-          />
-        </form>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-3 mb-4 justify-between">
+        {/* Environment Toggle */}
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setRefreshKey(k => k + 1)}
-            className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <a
-            href={displayUrl || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`p-2.5 rounded-lg transition-colors ${
-              displayUrl 
-                ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                : 'text-neutral-600 cursor-not-allowed'
+            onClick={onToggleEnvironment}
+            disabled={!hasPublished}
+            className={`relative w-11 h-6 bg-neutral-700 rounded-full transition-colors ${
+              hasPublished ? 'hover:bg-neutral-600 cursor-pointer' : 'opacity-50 cursor-not-allowed'
             }`}
-            title="Open in new tab"
-            onClick={(e) => !displayUrl && e.preventDefault()}
+            title={hasPublished ? undefined : 'Publish to production first to enable environment toggle'}
           >
-            <ExternalLink className="w-4 h-4" />
-          </a>
+            <span
+              className={`absolute top-1 w-4 h-4 rounded-full transition-all ${
+                isDevelopment 
+                  ? 'left-1 bg-amber-500' 
+                  : 'left-6 bg-green-500'
+              }`}
+            />
+          </button>
+          <span className={`text-sm ${isDevelopment ? 'text-amber-400' : 'text-green-400'} ${!hasPublished ? 'opacity-50' : ''}`}>
+            {isDevelopment ? 'Development' : 'Production'}
+          </span>
         </div>
 
-        {/* Divider */}
-        <div className="w-px h-6 bg-neutral-800" />
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleRunning}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm hover:bg-neutral-600 transition-colors"
+            title={isRunning ? 'Stop' : 'Start'}
+          >
+            {isRunning ? (
+              <>
+                <Pause className="w-4 h-4" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                Start
+              </>
+            )}
+          </button>
+          <button
+            className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm hover:bg-neutral-600 transition-colors"
+            title="Snapshot"
+          >
+            <Camera className="w-4 h-4" />
+            Snapshot
+          </button>
+          <button
+            className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm hover:bg-neutral-600 transition-colors"
+            title="Rollback"
+          >
+            <History className="w-4 h-4" />
+            Rollback
+          </button>
 
-        {/* Device Size Toggles */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setDeviceSize('desktop')}
-            className={`p-2.5 rounded-lg transition-colors ${
-              deviceSize === 'desktop' 
-                ? 'bg-neutral-800 text-white' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-            }`}
-            title="Desktop"
-          >
-            <Monitor className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setDeviceSize('tablet')}
-            className={`p-2.5 rounded-lg transition-colors ${
-              deviceSize === 'tablet' 
-                ? 'bg-neutral-800 text-white' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-            }`}
-            title="Tablet"
-          >
-            <Tablet className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setDeviceSize('mobile')}
-            className={`p-2.5 rounded-lg transition-colors ${
-              deviceSize === 'mobile' 
-                ? 'bg-neutral-800 text-white' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-            }`}
-            title="Mobile"
-          >
-            <Smartphone className="w-4 h-4" />
-          </button>
+          {/* Divider */}
+          <div className="w-px h-6 bg-neutral-800 mx-1" />
+
+          {/* Publish/Copy Button */}
+          {isDevelopment ? (
+            <button
+              onClick={onPublish}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 transition-colors"
+              title="Publish to Production"
+            >
+              <Upload className="w-4 h-4" />
+              Publish
+            </button>
+          ) : (
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm hover:bg-neutral-600 transition-colors"
+              title="Copy URL"
+            >
+              <Copy className="w-4 h-4" />
+              Copy
+            </button>
+          )}
         </div>
       </div>
 
       {/* Browser Frame */}
       <div className="card overflow-hidden">
         {/* Browser Chrome */}
-        <div className="flex items-center px-4 py-3 bg-neutral-900 border-b border-neutral-800">
-          {/* Window Controls */}
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-            <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
-            <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+        <div className="flex items-center px-4 py-3 bg-neutral-900 border-b border-neutral-800 gap-3">
+          {/* Device Size Toggles */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setDeviceSize('desktop')}
+              className={`p-1.5 rounded transition-colors ${
+                deviceSize === 'desktop' 
+                  ? 'bg-neutral-800 text-white' 
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+              title="Desktop"
+            >
+              <Monitor className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setDeviceSize('tablet')}
+              className={`p-1.5 rounded transition-colors ${
+                deviceSize === 'tablet' 
+                  ? 'bg-neutral-800 text-white' 
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+              title="Tablet"
+            >
+              <Tablet className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setDeviceSize('mobile')}
+              className={`p-1.5 rounded transition-colors ${
+                deviceSize === 'mobile' 
+                  ? 'bg-neutral-800 text-white' 
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+              title="Mobile"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+            </button>
           </div>
           
-          {/* URL Bar */}
-          <div className="flex-1 flex justify-center">
-            <span className="text-sm text-neutral-500">
-              {displayUrl || 'https://example.com/preview'}
-            </span>
-          </div>
+          {/* URL Input */}
+          <form onSubmit={handleUrlSubmit} className="flex-1">
+            <input
+              type="text"
+              value={localUrl}
+              onChange={(e) => setLocalUrl(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="https://example.com/preview"
+              className="w-full px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-neutral-600"
+            />
+          </form>
           
-          {/* Spacer for symmetry */}
-          <div className="w-[52px]" />
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setRefreshKey(k => k + 1)}
+              className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <a
+              href={displayUrl || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`p-1.5 rounded transition-colors ${
+                displayUrl 
+                  ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                  : 'text-neutral-600 cursor-not-allowed'
+              }`}
+              title="Open in new tab"
+              onClick={(e) => !displayUrl && e.preventDefault()}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
         </div>
 
         {/* Content Area */}

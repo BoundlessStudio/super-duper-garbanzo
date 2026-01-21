@@ -1,7 +1,7 @@
 import { useLiveQuery } from '@tanstack/react-db'
 import { eq } from '@tanstack/db'
-import { projectsCollection, tasksCollection, settingsCollection } from './collections'
-import { defaultProjectSettings, type Project, type Task, type ProjectSettings } from './schema'
+import { projectsCollection, tasksCollection, settingsCollection, commentsCollection } from './collections'
+import { defaultProjectSettings, type Project, type Task, type ProjectSettings, type Comment } from './schema'
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 15)
@@ -26,12 +26,12 @@ export function useProject(projectId: string) {
 
 export function useCreateProject() {
   return {
-    mutate: (name: string): Project => {
+    mutate: (name: string, description: string = ''): Project => {
       const now = new Date().toISOString()
       const project: Project = {
         id: generateId(),
         name,
-        description: '',
+        description,
         status: 'active',
         previewUrl: '',
         createdAt: now,
@@ -42,10 +42,11 @@ export function useCreateProject() {
       
       projectsCollection.insert(project)
       
-      // Create default settings
+      // Create default settings with development environment started
       const settings: ProjectSettings = {
         ...defaultProjectSettings,
         projectId: project.id,
+        developmentActive: true, // Start development environment by default
       }
       settingsCollection.insert(settings)
       
@@ -82,6 +83,16 @@ export function useDeleteProject() {
 }
 
 // Tasks hooks
+export function useTask(taskId: string) {
+  return useLiveQuery(
+    (q) =>
+      q.from({ tasks: tasksCollection })
+        .where(({ tasks }) => eq(tasks.id, taskId))
+        .findOne(),
+    [taskId]
+  )
+}
+
 export function useProjectTasks(projectId: string) {
   return useLiveQuery(
     (q) =>
@@ -98,6 +109,9 @@ export function useCreateTask() {
       const now = new Date().toISOString()
       const newTask: Task = {
         ...taskData,
+        type: taskData.type ?? 'development',
+        labels: taskData.labels ?? [],
+        relations: taskData.relations ?? [],
         id: generateId(),
         createdAt: now,
         updatedAt: now,
@@ -166,6 +180,53 @@ export function useUpdateSettings() {
       projectsCollection.update(projectId, (draft) => {
         draft.updatedAt = new Date().toISOString()
       })
+    },
+  }
+}
+
+// Comments hooks
+export function useTaskComments(taskId: string) {
+  return useLiveQuery(
+    (q) =>
+      q.from({ comments: commentsCollection })
+        .where(({ comments }) => eq(comments.taskId, taskId))
+        .orderBy(({ comments }) => comments.createdAt, 'asc'),
+    [taskId]
+  )
+}
+
+export function useCreateComment() {
+  return {
+    mutate: (commentData: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>): Comment => {
+      const now = new Date().toISOString()
+      const newComment: Comment = {
+        ...commentData,
+        id: generateId(),
+        createdAt: now,
+        updatedAt: now,
+      }
+      commentsCollection.insert(newComment)
+      
+      return newComment
+    },
+  }
+}
+
+export function useUpdateComment() {
+  return {
+    mutate: ({ id, updates }: { id: string; updates: Partial<Comment> }) => {
+      commentsCollection.update(id, (draft) => {
+        Object.assign(draft, updates)
+        draft.updatedAt = new Date().toISOString()
+      })
+    },
+  }
+}
+
+export function useDeleteComment() {
+  return {
+    mutate: (commentId: string) => {
+      commentsCollection.delete(commentId)
     },
   }
 }

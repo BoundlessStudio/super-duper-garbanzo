@@ -1,5 +1,5 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/db'
-import { projectSchema, taskSchema, projectSettingsSchema } from './schema'
+import { projectSchema, taskSchema, projectSettingsSchema, commentSchema } from './schema'
 
 // Projects collection with localStorage persistence
 export const projectsCollection = createCollection(
@@ -25,5 +25,14 @@ export const settingsCollection = createCollection(
     storageKey: 'customware-settings',
     schema: projectSettingsSchema,
     getKey: (settings) => settings.projectId,
+  })
+)
+
+// Comments collection with localStorage persistence
+export const commentsCollection = createCollection(
+  localStorageCollectionOptions({
+    storageKey: 'customware-comments',
+    schema: commentSchema,
+    getKey: (comment) => comment.id,
   })
 )
