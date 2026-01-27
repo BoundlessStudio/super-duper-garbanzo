@@ -53,14 +53,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning'
-import {
-  WebPreview,
-  WebPreviewBody,
-  WebPreviewNavigation,
-  WebPreviewUrl,
-} from '@/components/ai-elements/web-preview';
 import { Loader } from '@/components/ai-elements/loader'
-
 
 
 const PromptInputAttachmentsDisplay = () => {
@@ -83,7 +76,6 @@ const PromptInputAttachmentsDisplay = () => {
     </Attachments>
   )
 }
-
 
 const models = [
   {
@@ -125,12 +117,7 @@ const ChatBotDemo = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 pt-24 relative size-full h-[calc(100vh-72px)]">
       <div className="flex flex-col h-full">
-        <WebPreview defaultUrl={'https://www.example.com/'}>
-          <WebPreviewNavigation>
-            <WebPreviewUrl />
-          </WebPreviewNavigation>
-          <WebPreviewBody src={'https://www.example.com/'} />
-        </WebPreview>
+
         <Conversation className="h-full">
           <ConversationContent>
             {messages.map((message) => (
