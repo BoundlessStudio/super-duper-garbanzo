@@ -41,6 +41,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Header />
         {children}
         <TanStackDevtools
+          config={{ position: 'bottom-left' }}
           plugins={[
             {
               name: 'TanStack Router',

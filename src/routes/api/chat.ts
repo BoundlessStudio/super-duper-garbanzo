@@ -37,6 +37,10 @@ const updateTaskSchema = z.object({
 	status: z.enum(TASK_STATUSES).optional().describe("New status for the task"),
 });
 
+const removeTaskSchema = z.object({
+	taskId: z.string().describe("The ID of the task to remove"),
+});
+
 const addCommentSchema = z.object({
 	taskId: z.string().describe("The ID of the task to add a comment to"),
 	note: z.string().describe("The comment text"),
@@ -47,54 +51,56 @@ const addCommentSchema = z.object({
 		.describe('The type of activity (e.g., "Note", "Status Update")'),
 });
 
-const queryTasksSchema = z.object({
-	filter: z
-		.object({
-			status: z
-				.array(z.enum(TASK_STATUSES))
-				.optional()
-				.describe("Filter by one or more statuses"),
-			assignment: z
-				.string()
-				.optional()
-				.describe("Filter by assignee (partial match, case-insensitive)"),
-			search: z
-				.string()
-				.optional()
-				.describe("Search in task name and description (case-insensitive)"),
-			dueDateFrom: z
-				.string()
-				.optional()
-				.describe("Filter tasks with due date on or after this date (YYYY-MM-DD)"),
-			dueDateTo: z
-				.string()
-				.optional()
-				.describe("Filter tasks with due date on or before this date (YYYY-MM-DD)"),
-			overdue: z
-				.boolean()
-				.optional()
-				.describe("If true, only show overdue tasks (due date before today and not Done)"),
-		})
-		.optional()
-		.describe("Filter criteria for tasks"),
-	sort: z
-		.object({
-			field: z
-				.enum(["name", "dueDate", "status", "assignment", "createdAt"])
-				.default("dueDate")
-				.describe("Field to sort by"),
-			order: z
-				.enum(["asc", "desc"])
-				.default("asc")
-				.describe("Sort order: ascending or descending"),
-		})
-		.optional()
-		.describe("Sorting options"),
-	limit: z
-		.number()
-		.optional()
-		.describe("Maximum number of tasks to return"),
-});
+const filterTaskListSchema = z
+	.object({
+		filter: z
+			.object({
+				status: z
+					.array(z.enum(TASK_STATUSES))
+					.optional()
+					.describe("Filter by one or more statuses"),
+				assignment: z
+					.string()
+					.optional()
+					.describe("Filter by assignee (partial match, case-insensitive)"),
+				search: z
+					.string()
+					.optional()
+					.describe("Search in task name and description (case-insensitive)"),
+				dueDateFrom: z
+					.string()
+					.optional()
+					.describe("Filter tasks with due date on or after this date (YYYY-MM-DD)"),
+				dueDateTo: z
+					.string()
+					.optional()
+					.describe("Filter tasks with due date on or before this date (YYYY-MM-DD)"),
+				overdue: z
+					.boolean()
+					.optional()
+					.describe("If true, only show overdue tasks (due date before today and not Done)"),
+			})
+			.optional()
+			.describe("Filter criteria for tasks"),
+		sort: z
+			.object({
+				field: z
+					.enum(["name", "dueDate", "status", "assignment", "createdAt"])
+					.default("dueDate")
+					.describe("Field to sort by"),
+				order: z
+					.enum(["asc", "desc"])
+					.default("asc")
+					.describe("Sort order: ascending or descending"),
+			})
+			.optional()
+			.describe("Sorting options"),
+		limit: z
+			.number()
+			.optional()
+			.describe("Maximum number of tasks to return"),
+	})
+	.describe("Filter and sort tasks");
 
 export const Route = createFileRoute("/api/chat")({
 	server: {
@@ -116,19 +122,17 @@ export const Route = createFileRoute("/api/chat")({
 You have access to tools for managing tasks:
 - createTask: Create a new task with name, description, assignee, due date, and status
 - updateTask: Update an existing task's fields (status, description, etc.)
+- removeTask: Delete a task and its associated comments
 - listTasks: Get all current tasks to see what exists
-- queryTasks: Search and filter tasks with custom criteria (status, assignee, date range, overdue) and sorting
+- filterTaskList: Search and filter tasks with custom criteria (status, assignee, date range, overdue), sorting, and limits. This tool is handled on the client side and always receives an object as the input.
 - addComment: Add notes or updates to existing tasks
 
-When users ask about specific tasks, want filtered views, or need sorted results, use queryTasks. Examples:
-- "Show me all overdue tasks" → queryTasks with overdue: true
-- "What's assigned to John?" → queryTasks with assignment filter
-- "List blocked tasks sorted by due date" → queryTasks with status filter and sort
+When users ask about specific tasks, want filtered views, or need sorted results, use filterTaskList. Examples:
+- "Show me all overdue tasks" → filterTaskList with overdue: true
+- "What's assigned to John?" → filterTaskList with assignment filter
+- "List blocked tasks sorted by due date" → filterTaskList with status filter and sort
 
-Use clearTaskFilter when users want to clear or reset the current filter, or show all tasks again. Examples:
-- "Clear the filter" → clearTaskFilter
-- "Show all tasks" → clearTaskFilter
-- "Reset the view" → clearTaskFilter
+When you need to reset filters or see everything again, call filterTaskList with an empty object ({}).
 
 When users ask you to create or update tasks, use the appropriate tools. Always confirm what you've done after using a tool.`,
 					stopWhen: stepCountIs(50),
@@ -196,6 +200,30 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 								};
 							},
 						}),
+						removeTask: tool({
+							description:
+								"Remove/delete a task from the task list. Use listTasks first to find the task ID.",
+							inputSchema: zodSchema(removeTaskSchema),
+							execute: async (params) => {
+								const { taskId } = params;
+								const existing = await db
+									.select()
+									.from(tasks)
+									.where(eq(tasks.id, taskId));
+								if (existing.length === 0) {
+									return { success: false, error: `Task with ID ${taskId} not found` };
+								}
+								const taskName = existing[0].name;
+								// Delete associated comments first
+								await db.delete(comments).where(eq(comments.taskId, taskId));
+								// Delete the task
+								await db.delete(tasks).where(eq(tasks.id, taskId));
+								return {
+									success: true,
+									message: `Deleted task "${taskName}" and its associated comments`,
+								};
+							},
+						}),
 						listTasks: tool({
 							description:
 								"Get all tasks from the task list. Use this to see what tasks exist before updating them.",
@@ -216,10 +244,10 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 								};
 							},
 						}),
-						queryTasks: tool({
+						filterTaskList: tool({
 							description:
-								"Search and filter tasks with custom criteria and sorting. Use this for specific queries like finding overdue tasks, filtering by status/assignee, or sorting results. This tool is handled on the client side.",
-							inputSchema: zodSchema(queryTasksSchema),
+								"Search and filter tasks with custom criteria and sorting. Use this for specific queries like finding overdue tasks, filtering by status/assignee, or sorting results. This tool is handled on the client side and always receives an object as its input.",
+							inputSchema: zodSchema(filterTaskListSchema),
 						}),
 						addComment: tool({
 							description: "Add a comment/note to a task",
@@ -249,11 +277,6 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 									message: `Added comment to task "${task[0].name}"`,
 								};
 							},
-						}),
-						clearTaskFilter: tool({
-							description:
-								"Clear the current task filter to show all tasks. Use this when users want to reset the view or see all tasks again. This tool is handled on the client side.",
-							inputSchema: zodSchema(z.object({})),
 						}),
 					},
 				});

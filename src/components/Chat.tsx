@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { refetchTasks, refetchComments, setTaskQuery, clearTaskQuery, type TaskQuery } from "@/collections/db";
+import { refetchTasks, refetchComments, setTaskQuery, type TaskQuery } from "@/collections/db";
 import {
 	Attachment,
 	AttachmentPreview,
@@ -94,16 +94,52 @@ const models = [
 	},
 ];
 
+
 const getToolTitle = (toolName: string): string => {
 	const titles: Record<string, string> = {
 		createTask: "Create Task",
 		updateTask: "Update Task",
+		removeTask: "Remove Task",
 		listTasks: "List Tasks",
-		queryTasks: "Query Tasks",
+		filterTaskList: "Filter Task List",
 		addComment: "Add Comment",
-		clearTaskFilter: "Clear Filter",
 	};
 	return titles[toolName] || toolName;
+};
+
+const hasTaskQueryCriteria = (query?: TaskQuery | null): query is TaskQuery => {
+	if (!query) {
+		return false;
+	}
+	if (query.limit && query.limit > 0) {
+		return true;
+	}
+	if (query.sort) {
+		return true;
+	}
+	const filter = query.filter;
+	if (!filter) {
+		return false;
+	}
+	if (filter.status && filter.status.length > 0) {
+		return true;
+	}
+	if (filter.assignment?.trim()) {
+		return true;
+	}
+	if (filter.search?.trim()) {
+		return true;
+	}
+	if (filter.dueDateFrom) {
+		return true;
+	}
+	if (filter.dueDateTo) {
+		return true;
+	}
+	if (filter.overdue !== undefined) {
+		return true;
+	}
+	return false;
 };
 
 const Chat = () => {
@@ -111,30 +147,28 @@ const Chat = () => {
 	const [model, setModel] = useState<string>(models[0].value);
 	const { messages, sendMessage, status, regenerate, addToolOutput } = useChat({
 		onToolCall: async ({ toolCall }) => {
-			// Handle client-side tools
-			if (toolCall.toolName === "queryTasks") {
-				const input = toolCall.input as TaskQuery;
-				console.log("[Chat] queryTasks called with:", input);
-				setTaskQuery(input);
-				const output = {
-					success: true,
-					message: "Task filter applied on client.",
-					query: input,
-				};
-				// Explicitly add tool output for client-side tools
-				addToolOutput({ toolCallId: toolCall.toolCallId, tool: "queryTasks", output });
-				return;
-			}
-			if (toolCall.toolName === "clearTaskFilter") {
-				console.log("[Chat] clearTaskFilter called");
-				clearTaskQuery();
-				const output = {
-					success: true,
-					action: "clear",
-					message: "Task filter cleared. Showing all tasks.",
-				};
-				// Explicitly add tool output for client-side tools
-				addToolOutput({ toolCallId: toolCall.toolCallId, tool: "clearTaskFilter", output });
+			if (toolCall.toolName === "filterTaskList") {
+				const query = toolCall.input as TaskQuery | undefined;
+				const normalizedQuery = hasTaskQueryCriteria(query) ? query : null;
+				setTaskQuery(normalizedQuery);
+				const isClear = normalizedQuery === null;
+				console.log("[Chat] filterTaskList called with:", normalizedQuery);
+				const output = isClear
+					? {
+							success: true,
+							action: "clear",
+							message: "Task filter cleared. Showing all tasks.",
+					  }
+					: {
+							success: true,
+							message: "Task filter applied on client.",
+							query: normalizedQuery,
+					  };
+				addToolOutput({
+					toolCallId: toolCall.toolCallId,
+					tool: "filterTaskList",
+					output,
+				});
 				return;
 			}
 		},
