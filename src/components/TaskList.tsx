@@ -3,11 +3,8 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useMemo, useState } from "react";
 import {
-	addComment,
 	type Comment,
 	commentsCollection,
-	createTask,
-	updateTask,
 	startCollectionSync,
 	TASK_STATUSES,
 	type Task,
@@ -16,39 +13,11 @@ import {
 } from "@/collections/db";
 import { cn } from "@/lib/utils";
 
-type TaskDraft = {
-	name: string;
-	description: string;
-	assignment: string;
-	dueDate: string;
-	status: TaskStatus;
-};
-
-type CommentDraft = {
-	activity: string;
-	note: string;
-	author: string;
-};
-
 const statusColors: Record<TaskStatus, string> = {
 	"Not Started": "bg-slate-200 text-slate-700 border-slate-300",
 	"In Progress": "bg-amber-100 text-amber-800 border-amber-200",
 	Blocked: "bg-rose-100 text-rose-800 border-rose-200",
 	Done: "bg-emerald-100 text-emerald-800 border-emerald-200",
-};
-
-const emptyTaskDraft: TaskDraft = {
-	name: "",
-	description: "",
-	assignment: "",
-	dueDate: "",
-	status: "Not Started",
-};
-
-const emptyComment: CommentDraft = {
-	activity: "",
-	note: "",
-	author: "",
 };
 
 const formatDate = (value: string) => {
@@ -64,18 +33,31 @@ const formatDate = (value: string) => {
 };
 
 const TaskListInner = () => {
-	const [draft, setDraft] = useState<TaskDraft>(emptyTaskDraft);
-	const [commentDrafts, setCommentDrafts] = useState<
-		Record<string, CommentDraft>
-	>({});
 	const [statusFilter, setStatusFilter] = useState<TaskStatus | "All">("All");
 	const [search, setSearch] = useState("");
+	const [refreshKey, setRefreshKey] = useState(0);
 
-	const { data: taskRows = [] } = useLiveQuery((q) =>
-		q.from({ task: tasksCollection }).select(({ task }) => ({ task })),
+	// Listen for task/comment updates from chat
+	useEffect(() => {
+		const handleUpdate = () => {
+			console.log("[TaskList] Received update event, incrementing refreshKey");
+			setRefreshKey((k) => k + 1);
+		};
+		window.addEventListener("tasks-updated", handleUpdate);
+		window.addEventListener("comments-updated", handleUpdate);
+		return () => {
+			window.removeEventListener("tasks-updated", handleUpdate);
+			window.removeEventListener("comments-updated", handleUpdate);
+		};
+	}, []);
+
+	const { data: taskRows = [] } = useLiveQuery(
+		(q) => q.from({ task: tasksCollection }).select(({ task }) => ({ task })),
+		[refreshKey],
 	);
-	const { data: commentRows = [] } = useLiveQuery((q) =>
-		q.from({ comment: commentsCollection }).select(({ comment }) => ({ comment })),
+	const { data: commentRows = [] } = useLiveQuery(
+		(q) => q.from({ comment: commentsCollection }).select(({ comment }) => ({ comment })),
+		[refreshKey],
 	);
 
 	const tasks = useMemo(
@@ -113,64 +95,6 @@ const TaskListInner = () => {
 		[commentRows],
 	);
 
-	const handleCreateTask = async (event: React.FormEvent) => {
-		event.preventDefault();
-		if (!draft.name.trim() || !draft.assignment.trim() || !draft.dueDate) {
-			return;
-		}
-		try {
-			await createTask({ ...draft });
-			setDraft(emptyTaskDraft);
-		} catch (error) {
-			console.error("Failed to create task:", error);
-		}
-	};
-
-	const handleAddComment = async (taskId: string) => {
-		const draftForTask = commentDrafts[taskId] ?? emptyComment;
-		if (
-			!draftForTask.activity.trim() ||
-			!draftForTask.note.trim() ||
-			!draftForTask.author.trim()
-		) {
-			return;
-		}
-		try {
-			await addComment({
-				taskId,
-				activity: draftForTask.activity,
-				note: draftForTask.note,
-				author: draftForTask.author,
-			});
-			setCommentDrafts((prev) => ({ ...prev, [taskId]: emptyComment }));
-		} catch (error) {
-			console.error("Failed to add comment:", error);
-		}
-	};
-
-	const handleUpdateStatus = async (taskId: string, status: TaskStatus) => {
-		try {
-			await updateTask(taskId, { status });
-		} catch (error) {
-			console.error("Failed to update task status:", error);
-		}
-	};
-
-	const updateTaskField = (key: keyof TaskDraft, value: string) => {
-		setDraft((prev) => ({ ...prev, [key]: value }));
-	};
-
-	const updateCommentField = (
-		taskId: string,
-		key: keyof CommentDraft,
-		value: string,
-	) => {
-		setCommentDrafts((prev) => ({
-			...prev,
-			[taskId]: { ...(prev[taskId] ?? emptyComment), [key]: value },
-		}));
-	};
-
 	return (
 		<div className="flex h-full flex-col gap-4">
 			<header className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm">
@@ -206,121 +130,48 @@ const TaskListInner = () => {
 						/>
 					</div>
 				</div>
-				<form
-					onSubmit={handleCreateTask}
-					className="grid grid-cols-1 gap-3 md:grid-cols-12"
-				>
-					<input
-						value={draft.name}
-						onChange={(event) => updateTaskField("name", event.target.value)}
-						placeholder="Task name"
-						className="md:col-span-3 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-						required
-					/>
-					<input
-						value={draft.description}
-						onChange={(event) =>
-							updateTaskField("description", event.target.value)
-						}
-						placeholder="Description"
-						className="md:col-span-3 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-					/>
-					<input
-						value={draft.assignment}
-						onChange={(event) =>
-							updateTaskField("assignment", event.target.value)
-						}
-						placeholder="Assignee"
-						className="md:col-span-2 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-						required
-					/>
-					<input
-						type="date"
-						value={draft.dueDate}
-						onChange={(event) =>
-							updateTaskField("dueDate", event.target.value)
-						}
-						className="md:col-span-2 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-						required
-					/>
-					<select
-						value={draft.status}
-						onChange={(event) =>
-							updateTaskField("status", event.target.value as TaskStatus)
-						}
-						className="md:col-span-1 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-					>
-						{TASK_STATUSES.map((status) => (
-							<option key={status} value={status}>
-								{status}
-							</option>
-						))}
-					</select>
-					<button
-						type="submit"
-						className="md:col-span-1 inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/60"
-					>
-						Add
-					</button>
-				</form>
 			</header>
 
 			<div className="flex-1 overflow-auto rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
 				{tasks.length === 0 ? (
 					<div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
 						<p>No tasks yet.</p>
-						<p>Add one with the form above.</p>
+						<p>Use the chat to create tasks.</p>
 					</div>
 				) : (
 					<ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 						{tasks.map((task) => {
 							const groupedComments = commentsByTask[task.id] ?? [];
-							const commentDraft = commentDrafts[task.id] ?? emptyComment;
 							return (
 								<li
 									key={task.id}
 									className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/60 p-3 shadow-sm"
 								>
-									<div className="flex items-start gap-2">
-										<div className="flex flex-col gap-1">
-											<div className="flex flex-wrap items-center gap-2">
-												<h3 className="text-base font-semibold leading-tight">
-													{task.name}
-												</h3>
-												<span
-													className={cn(
-														"inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-semibold",
-														statusColors[task.status],
-													)}
-												>
-													{task.status}
-												</span>
-											</div>
-											<p className="text-sm text-muted-foreground line-clamp-2">
-												{task.description || "No description provided."}
-											</p>
-											<div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-												<span className="rounded-md border border-border/70 bg-card px-2 py-1">
-													Assigned to {task.assignment}
-												</span>
-												<span className="rounded-md border border-border/70 bg-card px-2 py-1">
-													Due {formatDate(task.dueDate)}
-												</span>
-											</div>
+									<div className="flex flex-col gap-1">
+										<div className="flex flex-wrap items-center gap-2">
+											<h3 className="text-base font-semibold leading-tight">
+												{task.name}
+											</h3>
+											<span
+												className={cn(
+													"inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-semibold",
+													statusColors[task.status],
+												)}
+											>
+												{task.status}
+											</span>
 										</div>
-										<select
-											value={task.status}
-											onChange={(event) =>
-												handleUpdateStatus(task.id, event.target.value as TaskStatus)
-											}
-											className="ml-auto h-9 rounded-lg border border-border/70 bg-background px-2 text-xs shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
-										>
-											{TASK_STATUSES.map((status) => (
-												<option key={status} value={status}>
-													{status}
-												</option>
-											))}
-										</select>
+										<p className="text-sm text-muted-foreground line-clamp-2">
+											{task.description || "No description provided."}
+										</p>
+										<div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+											<span className="rounded-md border border-border/70 bg-card px-2 py-1">
+												Assigned to {task.assignment}
+											</span>
+											<span className="rounded-md border border-border/70 bg-card px-2 py-1">
+												Due {formatDate(task.dueDate)}
+											</span>
+										</div>
 									</div>
 
 									<div className="rounded-md border border-dashed border-border/60 bg-muted/40 p-2">
@@ -356,51 +207,6 @@ const TaskListInner = () => {
 													</div>
 												))
 											)}
-										</div>
-										<div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-											<input
-												value={commentDraft.activity}
-												onChange={(event) =>
-													updateCommentField(
-														task.id,
-														"activity",
-														event.target.value,
-													)
-												}
-												placeholder="Activity"
-												className="col-span-1 rounded-md border border-border/70 bg-background px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
-											/>
-											<input
-												value={commentDraft.note}
-												onChange={(event) =>
-													updateCommentField(
-														task.id,
-														"note",
-														event.target.value,
-													)
-												}
-												placeholder="Note"
-												className="col-span-2 rounded-md border border-border/70 bg-background px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
-											/>
-											<input
-												value={commentDraft.author}
-												onChange={(event) =>
-													updateCommentField(
-														task.id,
-														"author",
-														event.target.value,
-													)
-												}
-												placeholder="Author"
-												className="col-span-2 rounded-md border border-border/70 bg-background px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
-											/>
-											<button
-												type="button"
-												onClick={() => handleAddComment(task.id)}
-												className="col-span-1 inline-flex items-center justify-center rounded-md bg-primary px-2 py-1 font-medium text-primary-foreground shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/60"
-											>
-												Add
-											</button>
 										</div>
 									</div>
 								</li>

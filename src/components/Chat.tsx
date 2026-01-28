@@ -108,42 +108,22 @@ const Chat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
 	const { messages, sendMessage, status, regenerate } = useChat();
-	const processedToolCalls = useRef<Set<string>>(new Set());
+	const lastRefreshedCount = useRef(0);
 
-	// Refetch tasks when task-related tool calls complete
+	// Refetch tasks and comments when messages change and we're not streaming
 	useEffect(() => {
-		const taskTools = ["createTask", "updateTask", "addComment"];
-
-		for (const message of messages) {
-			if (message.role !== "assistant") continue;
-
-			for (const part of message.parts) {
-				if (!part.type.startsWith("tool-")) continue;
-
-				const toolPart = part as {
-					type: string;
-					toolCallId: string;
-					state: string;
-				};
-
-				if (toolPart.state !== "output-available") continue;
-
-				const toolName = part.type.replace("tool-", "");
-				if (!taskTools.includes(toolName)) continue;
-
-				// Only process each tool call once
-				if (processedToolCalls.current.has(toolPart.toolCallId)) continue;
-				processedToolCalls.current.add(toolPart.toolCallId);
-
-				// Refetch data
-				if (toolName === "addComment") {
-					refetchComments();
-				} else {
-					refetchTasks();
-				}
+		console.log("[Chat] useEffect triggered - status:", status, "messages:", messages.length);
+		// Only refresh when not actively streaming and messages have changed
+		if (status !== "streaming" && status !== "submitted") {
+			const messageCount = messages.length;
+			if (messageCount > lastRefreshedCount.current) {
+				console.log("[Chat] Triggering refetch - count changed from", lastRefreshedCount.current, "to", messageCount);
+				lastRefreshedCount.current = messageCount;
+				refetchTasks();
+				refetchComments();
 			}
 		}
-	}, [messages]);
+	}, [messages, status]);
 
 	const handleSubmit = (message: PromptInputMessage) => {
 		const hasText = Boolean(message.text);

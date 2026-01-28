@@ -149,29 +149,25 @@ export const startCollectionSync = async () => {
 
 // Refetch tasks from server and sync to collection
 export const refetchTasks = async () => {
+	console.log("[refetchTasks] Starting refetch...");
 	try {
 		const serverTasks = await fetchTasks();
-		const existingIds = new Set<string>();
+		console.log("[refetchTasks] Fetched", serverTasks.length, "tasks from server");
 
-		// Collect existing IDs
-		for (const [id] of tasksCollection.state) {
-			existingIds.add(id as string);
-		}
-
-		const serverIds = new Set(serverTasks.map((t) => t.id));
-
-		// Add new tasks from server
+		// Insert all server tasks - collection will handle duplicates
 		for (const task of serverTasks) {
-			if (!existingIds.has(task.id)) {
+			try {
 				tasksCollection.insert(task);
+				console.log("[refetchTasks] Inserted task:", task.id);
+			} catch {
+				// Task might already exist, ignore
 			}
 		}
 
-		// Remove tasks that no longer exist on server
-		for (const id of existingIds) {
-			if (!serverIds.has(id)) {
-				tasksCollection.delete(id);
-			}
+		// Dispatch event to notify listeners
+		if (typeof window !== "undefined") {
+			console.log("[refetchTasks] Dispatching tasks-updated event");
+			window.dispatchEvent(new CustomEvent("tasks-updated"));
 		}
 	} catch (error) {
 		console.error("Failed to refetch tasks:", error);
@@ -182,27 +178,19 @@ export const refetchTasks = async () => {
 export const refetchComments = async () => {
 	try {
 		const serverComments = await fetchComments();
-		const existingIds = new Set<string>();
 
-		// Collect existing IDs
-		for (const [id] of commentsCollection.state) {
-			existingIds.add(id as string);
-		}
-
-		const serverIds = new Set(serverComments.map((c) => c.id));
-
-		// Add new comments from server
+		// Insert all server comments - collection will handle duplicates
 		for (const comment of serverComments) {
-			if (!existingIds.has(comment.id)) {
+			try {
 				commentsCollection.insert(comment);
+			} catch {
+				// Comment might already exist, ignore
 			}
 		}
 
-		// Remove comments that no longer exist on server
-		for (const id of existingIds) {
-			if (!serverIds.has(id)) {
-				commentsCollection.delete(id);
-			}
+		// Dispatch event to notify listeners
+		if (typeof window !== "undefined") {
+			window.dispatchEvent(new CustomEvent("comments-updated"));
 		}
 	} catch (error) {
 		console.error("Failed to refetch comments:", error);
@@ -235,13 +223,15 @@ export const createTask = async (
 };
 
 export const updateTask = async (id: string, updates: Partial<Task>) => {
-	const existing = tasksCollection.state.data.get(id);
+	const existing = tasksCollection.state.get(id);
 	if (!existing) throw new Error("Task not found");
 
 	const updatedTask = { ...existing, ...updates };
 
 	// Optimistic update
-	tasksCollection.update(id, updatedTask);
+	tasksCollection.update(id, (draft) => {
+		Object.assign(draft, updates);
+	});
 
 	// Sync to server
 	try {
@@ -249,7 +239,9 @@ export const updateTask = async (id: string, updates: Partial<Task>) => {
 	} catch (error) {
 		console.error("Failed to sync task update to server:", error);
 		// Rollback on error
-		tasksCollection.update(id, existing);
+		tasksCollection.update(id, (draft) => {
+			Object.assign(draft, existing);
+		});
 		throw error;
 	}
 
@@ -257,7 +249,7 @@ export const updateTask = async (id: string, updates: Partial<Task>) => {
 };
 
 export const deleteTask = async (id: string) => {
-	const existing = tasksCollection.state.data.get(id);
+	const existing = tasksCollection.state.get(id);
 	if (!existing) return;
 
 	// Optimistic delete
@@ -300,7 +292,7 @@ export const addComment = async (
 };
 
 export const deleteComment = async (id: string) => {
-	const existing = commentsCollection.state.data.get(id);
+	const existing = commentsCollection.state.get(id);
 	if (!existing) return;
 
 	// Optimistic delete

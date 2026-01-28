@@ -157,12 +157,21 @@ export const CommitTimestamp = ({
   children,
   ...props
 }: CommitTimestampProps) => {
-  const formatted = new Intl.RelativeTimeFormat("en", {
-    numeric: "auto",
-  }).format(
-    Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-    "day"
-  );
+  const [formatted, setFormatted] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormatted(
+      new Intl.RelativeTimeFormat("en", {
+        numeric: "auto",
+      }).format(
+        Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        "day"
+      )
+    );
+  }, [date]);
+
+  // Use ISO date string as stable fallback during SSR/hydration
+  const fallback = date.toISOString().split("T")[0];
 
   return (
     <time
@@ -170,7 +179,7 @@ export const CommitTimestamp = ({
       dateTime={date.toISOString()}
       {...props}
     >
-      {children ?? formatted}
+      {children ?? formatted ?? fallback}
     </time>
   );
 };
