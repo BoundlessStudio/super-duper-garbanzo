@@ -1,12 +1,14 @@
 "use client";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	addComment,
 	type Comment,
 	commentsCollection,
 	createTask,
+	updateTask,
+	startCollectionSync,
 	TASK_STATUSES,
 	type Task,
 	type TaskStatus,
@@ -68,71 +70,13 @@ const TaskListInner = () => {
 	>({});
 	const [statusFilter, setStatusFilter] = useState<TaskStatus | "All">("All");
 	const [search, setSearch] = useState("");
-	const seeded = useRef(false);
 
 	const { data: taskRows = [] } = useLiveQuery((q) =>
-		q.from({ task: tasksCollection }),
+		q.from({ task: tasksCollection }).select(({ task }) => ({ task })),
 	);
 	const { data: commentRows = [] } = useLiveQuery((q) =>
-		q.from({ comment: commentsCollection }),
+		q.from({ comment: commentsCollection }).select(({ comment }) => ({ comment })),
 	);
-
-	// Seed a few example tasks/comments on first load
-	useEffect(() => {
-		if (seeded.current || taskRows.length > 0) return;
-		seeded.current = true;
-
-		const today = new Date();
-		const plusDays = (days: number) => {
-			const next = new Date(today);
-			next.setDate(today.getDate() + days);
-			return next.toISOString().slice(0, 10);
-		};
-
-		const demoTasks: Array<Omit<Task, "id" | "createdAt">> = [
-			{
-				name: "Design onboarding flow",
-				description: "Sketch welcome screens and checklist.",
-				assignment: "Alex Kim",
-				dueDate: plusDays(2),
-				status: "In Progress",
-			},
-			{
-				name: "Ship metrics dashboard",
-				description: "Finalize KPI tiles and alerts.",
-				assignment: "Sam Lee",
-				dueDate: plusDays(7),
-				status: "Not Started",
-			},
-			{
-				name: "Resolve billing webhook",
-				description: "Investigate 500s on retry path.",
-				assignment: "Jordan Patel",
-				dueDate: plusDays(1),
-				status: "Blocked",
-			},
-		];
-
-		const created = demoTasks.map((task) =>
-			createTask({
-				...task,
-			}),
-		);
-
-		created.forEach((task, index) => {
-			addComment({
-				taskId: task.id,
-				activity: "Note",
-				note:
-					index === 0
-						? "UX reviewed first pass."
-						: index === 1
-							? "Awaiting stakeholder inputs."
-							: "Webhook retries failing after 3rd attempt.",
-				author: "System",
-			});
-		});
-	}, [taskRows.length]);
 
 	const tasks = useMemo(
 		() =>
@@ -169,18 +113,20 @@ const TaskListInner = () => {
 		[commentRows],
 	);
 
-	const handleCreateTask = (event: React.FormEvent) => {
+	const handleCreateTask = async (event: React.FormEvent) => {
 		event.preventDefault();
 		if (!draft.name.trim() || !draft.assignment.trim() || !draft.dueDate) {
 			return;
 		}
-		createTask({
-			...draft,
-		});
-		setDraft(emptyTaskDraft);
+		try {
+			await createTask({ ...draft });
+			setDraft(emptyTaskDraft);
+		} catch (error) {
+			console.error("Failed to create task:", error);
+		}
 	};
 
-	const handleAddComment = (taskId: string) => {
+	const handleAddComment = async (taskId: string) => {
 		const draftForTask = commentDrafts[taskId] ?? emptyComment;
 		if (
 			!draftForTask.activity.trim() ||
@@ -189,19 +135,25 @@ const TaskListInner = () => {
 		) {
 			return;
 		}
-		addComment({
-			taskId,
-			activity: draftForTask.activity,
-			note: draftForTask.note,
-			author: draftForTask.author,
-		});
-		setCommentDrafts((prev) => ({ ...prev, [taskId]: emptyComment }));
+		try {
+			await addComment({
+				taskId,
+				activity: draftForTask.activity,
+				note: draftForTask.note,
+				author: draftForTask.author,
+			});
+			setCommentDrafts((prev) => ({ ...prev, [taskId]: emptyComment }));
+		} catch (error) {
+			console.error("Failed to add comment:", error);
+		}
 	};
 
-	const updateStatus = (taskId: string, status: TaskStatus) => {
-		tasksCollection.update(taskId, (draftTask) => {
-			draftTask.status = status;
-		});
+	const handleUpdateStatus = async (taskId: string, status: TaskStatus) => {
+		try {
+			await updateTask(taskId, { status });
+		} catch (error) {
+			console.error("Failed to update task status:", error);
+		}
 	};
 
 	const updateTaskField = (key: keyof TaskDraft, value: string) => {
@@ -359,7 +311,7 @@ const TaskListInner = () => {
 										<select
 											value={task.status}
 											onChange={(event) =>
-												updateStatus(task.id, event.target.value as TaskStatus)
+												handleUpdateStatus(task.id, event.target.value as TaskStatus)
 											}
 											className="ml-auto h-9 rounded-lg border border-border/70 bg-background px-2 text-xs shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
 										>
@@ -464,7 +416,11 @@ const TaskListInner = () => {
 const TaskList = () => {
 	// Defer rendering the DB-backed list until after hydration completes
 	const [isClient, setIsClient] = useState(false);
-	useEffect(() => setIsClient(true), []);
+	useEffect(() => {
+		// Start localStorage sync after hydration
+		startCollectionSync();
+		setIsClient(true);
+	}, []);
 	if (!isClient) return null;
 	return <TaskListInner />;
 };

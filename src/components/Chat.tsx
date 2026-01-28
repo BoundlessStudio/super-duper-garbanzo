@@ -2,7 +2,8 @@
 
 import { useChat } from "@ai-sdk/react";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { refetchTasks, refetchComments } from "@/collections/db";
 import {
 	Attachment,
 	AttachmentPreview,
@@ -53,6 +54,13 @@ import {
 	SourcesContent,
 	SourcesTrigger,
 } from "@/components/ai-elements/sources";
+import {
+	Tool,
+	ToolContent,
+	ToolHeader,
+	ToolInput,
+	ToolOutput,
+} from "@/components/ai-elements/tool";
 
 const PromptInputAttachmentsDisplay = () => {
 	const attachments = usePromptInputAttachments();
@@ -78,18 +86,64 @@ const PromptInputAttachmentsDisplay = () => {
 const models = [
 	{
 		name: "GPT-5.2",
-		value: "openai/gpt-5.2",
+		value: "gpt-5.2",
 	},
 	{
 		name: "GPT-5.2 Codex",
-		value: "openai/gpt-5.2-codex",
+		value: "gpt-5.2-codex",
 	},
 ];
+
+const getToolTitle = (toolName: string): string => {
+	const titles: Record<string, string> = {
+		createTask: "Create Task",
+		updateTask: "Update Task",
+		listTasks: "List Tasks",
+		addComment: "Add Comment",
+	};
+	return titles[toolName] || toolName;
+};
 
 const Chat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
 	const { messages, sendMessage, status, regenerate } = useChat();
+	const processedToolCalls = useRef<Set<string>>(new Set());
+
+	// Refetch tasks when task-related tool calls complete
+	useEffect(() => {
+		const taskTools = ["createTask", "updateTask", "addComment"];
+
+		for (const message of messages) {
+			if (message.role !== "assistant") continue;
+
+			for (const part of message.parts) {
+				if (!part.type.startsWith("tool-")) continue;
+
+				const toolPart = part as {
+					type: string;
+					toolCallId: string;
+					state: string;
+				};
+
+				if (toolPart.state !== "output-available") continue;
+
+				const toolName = part.type.replace("tool-", "");
+				if (!taskTools.includes(toolName)) continue;
+
+				// Only process each tool call once
+				if (processedToolCalls.current.has(toolPart.toolCallId)) continue;
+				processedToolCalls.current.add(toolPart.toolCallId);
+
+				// Refetch data
+				if (toolName === "addComment") {
+					refetchComments();
+				} else {
+					refetchTasks();
+				}
+			}
+		}
+	}, [messages]);
 
 	const handleSubmit = (message: PromptInputMessage) => {
 		const hasText = Boolean(message.text);
@@ -143,6 +197,37 @@ const Chat = () => {
 										</Sources>
 									)}
 								{message.parts.map((part, i) => {
+									// Handle tool parts (type starts with "tool-")
+									if (part.type.startsWith("tool-")) {
+										const toolPart = part as {
+											type: string;
+											toolCallId: string;
+											state: "input-streaming" | "input-available" | "output-available" | "output-error";
+											input: unknown;
+											output?: unknown;
+											errorText?: string;
+										};
+										const toolName = part.type.replace("tool-", "");
+										return (
+											<Tool key={`${message.id}-${i}`}>
+												<ToolHeader
+													title={getToolTitle(toolName)}
+													type={toolPart.type as `tool-${string}`}
+													state={toolPart.state}
+												/>
+												<ToolContent>
+													<ToolInput input={toolPart.input} />
+													{(toolPart.state === "output-available" || toolPart.state === "output-error") && (
+														<ToolOutput
+															output={toolPart.output}
+															errorText={toolPart.errorText}
+														/>
+													)}
+												</ToolContent>
+											</Tool>
+										);
+									}
+
 									switch (part.type) {
 										case "text":
 											return (
