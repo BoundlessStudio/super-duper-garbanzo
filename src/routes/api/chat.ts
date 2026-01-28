@@ -99,8 +99,26 @@ const filterTaskListSchema = z
 			.number()
 			.optional()
 			.describe("Maximum number of tasks to return"),
-	})
-	.describe("Filter and sort tasks");
+		})
+		.describe("Filter and sort tasks");
+
+const COMMENT_PREVIEW_MAX = 120;
+const normalizeCommentValue = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const truncateCommentText = (value: string, max = COMMENT_PREVIEW_MAX) => {
+	const normalized = normalizeCommentValue(value);
+	return normalized.length > max ? `${normalized.slice(0, max - 1)}…` : normalized;
+};
+
+type TaskUpdateField = "name" | "description" | "assignment" | "dueDate" | "status";
+
+const FIELD_ACTIVITY_LABELS: Record<TaskUpdateField, string> = {
+	name: "Name Update",
+	description: "Description Update",
+	assignment: "Assignment Update",
+	dueDate: "Due Date Update",
+	status: "Status Update",
+};
 
 export const Route = createFileRoute("/api/chat")({
 	server: {
@@ -141,21 +159,23 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 							description: "Create a new task in the task list",
 							inputSchema: zodSchema(createTaskSchema),
 							execute: async (params) => {
-								const { name, description, assignment, dueDate, status } = params;
-								const newTask = {
-									id: nanoid(),
-									name,
-									description: description || "",
-									assignment,
-									dueDate,
-									status: status || "Not Started",
-									createdAt: new Date().toISOString(),
-								};
-								const result = await db.insert(tasks).values(newTask).returning();
-								const task = result[0];
-								return {
-									success: true,
-									task: {
+							const { name, description, assignment, dueDate, status } = params;
+							const resolvedStatus = status || "Not Started";
+							const resolvedDescription = description || "";
+							const newTask = {
+								id: nanoid(),
+								name,
+								description: resolvedDescription,
+								assignment,
+								dueDate,
+								status: resolvedStatus,
+								createdAt: new Date().toISOString(),
+							};
+							const result = await db.insert(tasks).values(newTask).returning();
+							const task = result[0];
+							return {
+								success: true,
+								task: {
 										id: task.id,
 										name: task.name,
 										assignment: task.assignment,
@@ -180,12 +200,65 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 								if (existing.length === 0) {
 									return { success: false, error: `Task with ID ${taskId} not found` };
 								}
+								const existingTask = existing[0];
 								const updates: Partial<Task> = {};
-								if (name !== undefined) updates.name = name;
-								if (description !== undefined) updates.description = description;
-								if (assignment !== undefined) updates.assignment = assignment;
-								if (dueDate !== undefined) updates.dueDate = dueDate;
-								if (status !== undefined) updates.status = status;
+								const changeMessages: string[] = [];
+								const changedFields: TaskUpdateField[] = [];
+
+								const recordChange = (
+									field: TaskUpdateField,
+									label: string,
+									oldValue: string,
+									newValue: string,
+								) => {
+									changeMessages.push(
+										`${label} changed from ${truncateCommentText(oldValue)} to ${truncateCommentText(
+											newValue,
+										)}`,
+									);
+									changedFields.push(field);
+								};
+
+								if (name !== undefined) {
+									updates.name = name;
+									if (name !== existingTask.name) {
+										recordChange("name", "Name", existingTask.name, name);
+									}
+								}
+								if (description !== undefined) {
+									updates.description = description;
+									if (description !== existingTask.description) {
+										recordChange(
+											"description",
+											"Description",
+											existingTask.description,
+											description,
+										);
+									}
+								}
+								if (assignment !== undefined) {
+									updates.assignment = assignment;
+									if (assignment !== existingTask.assignment) {
+										recordChange(
+											"assignment",
+											"Assignment",
+											existingTask.assignment,
+											assignment,
+										);
+									}
+								}
+								if (dueDate !== undefined) {
+									updates.dueDate = dueDate;
+									if (dueDate !== existingTask.dueDate) {
+										recordChange("dueDate", "Due date", existingTask.dueDate, dueDate);
+									}
+								}
+								if (status !== undefined) {
+									updates.status = status;
+									if (status !== existingTask.status) {
+										recordChange("status", "Status", existingTask.status, status);
+									}
+								}
 
 								const result = await db
 									.update(tasks)
@@ -193,6 +266,22 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 									.where(eq(tasks.id, taskId))
 									.returning();
 								const updatedTask = result[0];
+
+								if (changeMessages.length > 0) {
+									const commentActivity =
+										changedFields.length === 1
+											? FIELD_ACTIVITY_LABELS[changedFields[0]]
+											: "Task Update";
+									await db.insert(comments).values({
+										id: nanoid(),
+										taskId,
+										activity: commentActivity,
+										note: changeMessages.join("; "),
+										date: new Date().toISOString(),
+										author: "System",
+									});
+								}
+
 								return {
 									success: true,
 									task: updatedTask,
