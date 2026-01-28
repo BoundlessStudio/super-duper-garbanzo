@@ -21,7 +21,10 @@
       "Bash(del \"d:\\\\Development\\\\BoundlessAi\\\\super-duper-garbanzo\\\\PLAN.md\")",
       "Bash(pnpm db:generate:*)",
       "Bash(pnpm db:migrate:*)",
-      "Bash(pnpm db:seed:*)"
+      "Bash(pnpm db:seed:*)",
+      "Bash(git -C \"d:\\\\Development\\\\BoundlessAi\\\\super-duper-garbanzo\" log --oneline -20)",
+      "Bash(dir /s /b node_modules*react-db*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

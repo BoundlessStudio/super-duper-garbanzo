@@ -61,6 +61,47 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export type Task = z.infer<typeof taskZodSchema>;
 export type Comment = z.infer<typeof commentZodSchema>;
 
+// Query state for filtering/sorting tasks from chat
+export type TaskQueryFilter = {
+	status?: TaskStatus[];
+	assignment?: string;
+	search?: string;
+	dueDateFrom?: string;
+	dueDateTo?: string;
+	overdue?: boolean;
+};
+
+export type TaskQuerySort = {
+	field: "name" | "dueDate" | "status" | "assignment" | "createdAt";
+	order: "asc" | "desc";
+};
+
+export type TaskQuery = {
+	filter?: TaskQueryFilter;
+	sort?: TaskQuerySort;
+	limit?: number;
+};
+
+// Shared query state with subscription support
+let currentTaskQuery: TaskQuery | null = null;
+const queryListeners = new Set<(query: TaskQuery | null) => void>();
+
+export const getTaskQuery = () => currentTaskQuery;
+
+export const setTaskQuery = (query: TaskQuery | null) => {
+	currentTaskQuery = query;
+	queryListeners.forEach((listener) => listener(query));
+};
+
+export const clearTaskQuery = () => setTaskQuery(null);
+
+export const subscribeToTaskQuery = (listener: (query: TaskQuery | null) => void) => {
+	queryListeners.add(listener);
+	return () => {
+		queryListeners.delete(listener);
+	};
+};
+
 // Server sync helper functions
 async function fetchTasks(): Promise<Task[]> {
 	const response = await fetch("/api/tasks");
@@ -149,25 +190,34 @@ export const startCollectionSync = async () => {
 
 // Refetch tasks from server and sync to collection
 export const refetchTasks = async () => {
-	console.log("[refetchTasks] Starting refetch...");
 	try {
 		const serverTasks = await fetchTasks();
-		console.log("[refetchTasks] Fetched", serverTasks.length, "tasks from server");
+		const serverTaskIds = new Set(serverTasks.map((t) => t.id));
 
-		// Insert all server tasks - collection will handle duplicates
+		// Get current local task IDs
+		const localTaskIds = new Set(tasksCollection.state.keys());
+
+		// Insert new tasks and update existing ones
 		for (const task of serverTasks) {
-			try {
+			const existing = tasksCollection.state.get(task.id);
+			if (existing) {
+				// Update existing task if different
+				if (JSON.stringify(existing) !== JSON.stringify(task)) {
+					tasksCollection.update(task.id, (draft) => {
+						Object.assign(draft, task);
+					});
+				}
+			} else {
+				// Insert new task
 				tasksCollection.insert(task);
-				console.log("[refetchTasks] Inserted task:", task.id);
-			} catch {
-				// Task might already exist, ignore
 			}
 		}
 
-		// Dispatch event to notify listeners
-		if (typeof window !== "undefined") {
-			console.log("[refetchTasks] Dispatching tasks-updated event");
-			window.dispatchEvent(new CustomEvent("tasks-updated"));
+		// Delete tasks that no longer exist on server
+		for (const localId of localTaskIds) {
+			if (!serverTaskIds.has(String(localId))) {
+				tasksCollection.delete(String(localId));
+			}
 		}
 	} catch (error) {
 		console.error("Failed to refetch tasks:", error);
@@ -178,19 +228,32 @@ export const refetchTasks = async () => {
 export const refetchComments = async () => {
 	try {
 		const serverComments = await fetchComments();
+		const serverCommentIds = new Set(serverComments.map((c) => c.id));
 
-		// Insert all server comments - collection will handle duplicates
+		// Get current local comment IDs
+		const localCommentIds = new Set(commentsCollection.state.keys());
+
+		// Insert new comments and update existing ones
 		for (const comment of serverComments) {
-			try {
+			const existing = commentsCollection.state.get(comment.id);
+			if (existing) {
+				// Update existing comment if different
+				if (JSON.stringify(existing) !== JSON.stringify(comment)) {
+					commentsCollection.update(comment.id, (draft) => {
+						Object.assign(draft, comment);
+					});
+				}
+			} else {
+				// Insert new comment
 				commentsCollection.insert(comment);
-			} catch {
-				// Comment might already exist, ignore
 			}
 		}
 
-		// Dispatch event to notify listeners
-		if (typeof window !== "undefined") {
-			window.dispatchEvent(new CustomEvent("comments-updated"));
+		// Delete comments that no longer exist on server
+		for (const localId of localCommentIds) {
+			if (!serverCommentIds.has(String(localId))) {
+				commentsCollection.delete(String(localId));
+			}
 		}
 	} catch (error) {
 		console.error("Failed to refetch comments:", error);

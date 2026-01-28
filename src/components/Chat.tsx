@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { refetchTasks, refetchComments } from "@/collections/db";
+import { refetchTasks, refetchComments, setTaskQuery, clearTaskQuery, type TaskQuery } from "@/collections/db";
 import {
 	Attachment,
 	AttachmentPreview,
@@ -99,7 +99,9 @@ const getToolTitle = (toolName: string): string => {
 		createTask: "Create Task",
 		updateTask: "Update Task",
 		listTasks: "List Tasks",
+		queryTasks: "Query Tasks",
 		addComment: "Add Comment",
+		clearTaskFilter: "Clear Filter",
 	};
 	return titles[toolName] || toolName;
 };
@@ -107,7 +109,30 @@ const getToolTitle = (toolName: string): string => {
 const Chat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
-	const { messages, sendMessage, status, regenerate } = useChat();
+	const { messages, sendMessage, status, regenerate } = useChat({
+		onToolCall: async ({ toolCall }) => {
+			// Handle client-side tools
+			if (toolCall.toolName === "queryTasks") {
+				const args = toolCall.args as TaskQuery;
+				console.log("[Chat] queryTasks called with:", args);
+				setTaskQuery(args);
+				return {
+					success: true,
+					message: "Task filter applied on client.",
+					query: args,
+				};
+			}
+			if (toolCall.toolName === "clearTaskFilter") {
+				console.log("[Chat] clearTaskFilter called");
+				clearTaskQuery();
+				return {
+					success: true,
+					action: "clear",
+					message: "Task filter cleared. Showing all tasks.",
+				};
+			}
+		},
+	});
 	const lastRefreshedCount = useRef(0);
 
 	// Refetch tasks and comments when messages change and we're not streaming
