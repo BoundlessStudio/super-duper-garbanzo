@@ -211,10 +211,9 @@ const TaskChat = () => {
 	};
 
 	return (
-		<div className="max-w-4xl mx-auto pt-24 relative size-full">
-			<div className="flex flex-col h-full">
-				<Conversation className="h-full">
-					<ConversationContent>
+		<div className="flex h-full w-full flex-1 flex-col gap-4 min-h-0">
+			<Conversation className="flex-1 min-h-0">
+				<ConversationContent>
 						{messages.map((message) => (
 							<div key={message.id}>
 								{message.role === "assistant" &&
@@ -324,56 +323,55 @@ const TaskChat = () => {
 						))}
 						{status === "submitted" && <Loader />}
 					</ConversationContent>
-					<ConversationScrollButton />
-				</Conversation>
-				<PromptInput
-					onSubmit={handleSubmit}
-					className="mt-4"
-					globalDrop
-					multiple
-				>
-					<PromptInputHeader>
-						<PromptInputAttachmentsDisplay />
-					</PromptInputHeader>
-					<PromptInputBody>
-						<PromptInputTextarea
-							onChange={(e) => setInput(e.target.value)}
-							value={input}
-						/>
-					</PromptInputBody>
-					<PromptInputFooter>
-						<PromptInputTools>
-							<PromptInputActionMenu>
-								<PromptInputActionMenuTrigger />
-								<PromptInputActionMenuContent>
-									<PromptInputActionAddAttachments />
-								</PromptInputActionMenuContent>
-							</PromptInputActionMenu>
-							<PromptInputSelect
-								onValueChange={(value) => {
-									setModel(value);
-								}}
-								value={model}
-							>
-								<PromptInputSelectTrigger>
-									<PromptInputSelectValue />
-								</PromptInputSelectTrigger>
-								<PromptInputSelectContent>
-									{models.map((modelOption) => (
-										<PromptInputSelectItem
-											key={modelOption.value}
-											value={modelOption.value}
-										>
-											{modelOption.name}
-										</PromptInputSelectItem>
-									))}
-								</PromptInputSelectContent>
-							</PromptInputSelect>
-						</PromptInputTools>
-						<PromptInputSubmit disabled={!input && !status} status={status} />
-					</PromptInputFooter>
-				</PromptInput>
-			</div>
+				<ConversationScrollButton />
+			</Conversation>
+			<PromptInput
+				onSubmit={handleSubmit}
+				className="flex-shrink-0"
+				globalDrop
+				multiple
+			>
+				<PromptInputHeader>
+					<PromptInputAttachmentsDisplay />
+				</PromptInputHeader>
+				<PromptInputBody>
+					<PromptInputTextarea
+						onChange={(e) => setInput(e.target.value)}
+						value={input}
+					/>
+				</PromptInputBody>
+				<PromptInputFooter>
+					<PromptInputTools>
+						<PromptInputActionMenu>
+							<PromptInputActionMenuTrigger />
+							<PromptInputActionMenuContent>
+								<PromptInputActionAddAttachments />
+							</PromptInputActionMenuContent>
+						</PromptInputActionMenu>
+						<PromptInputSelect
+							onValueChange={(value) => {
+								setModel(value);
+							}}
+							value={model}
+						>
+							<PromptInputSelectTrigger>
+								<PromptInputSelectValue />
+							</PromptInputSelectTrigger>
+							<PromptInputSelectContent>
+								{models.map((modelOption) => (
+									<PromptInputSelectItem
+										key={modelOption.value}
+										value={modelOption.value}
+									>
+										{modelOption.name}
+									</PromptInputSelectItem>
+								))}
+							</PromptInputSelectContent>
+						</PromptInputSelect>
+					</PromptInputTools>
+					<PromptInputSubmit disabled={!input && !status} status={status} />
+				</PromptInputFooter>
+			</PromptInput>
 		</div>
 	);
 };
