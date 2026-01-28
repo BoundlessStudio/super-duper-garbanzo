@@ -142,7 +142,7 @@ const hasTaskQueryCriteria = (query?: TaskQuery | null): query is TaskQuery => {
 	return false;
 };
 
-const Chat = () => {
+const TaskChat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
 	const { messages, sendMessage, status, regenerate, addToolOutput } = useChat({
@@ -152,7 +152,7 @@ const Chat = () => {
 				const normalizedQuery = hasTaskQueryCriteria(query) ? query : null;
 				setTaskQuery(normalizedQuery);
 				const isClear = normalizedQuery === null;
-				console.log("[Chat] filterTaskList called with:", normalizedQuery);
+				console.log("[TaskChat] filterTaskList called with:", normalizedQuery);
 				const output = isClear
 					? {
 							success: true,
@@ -177,12 +177,12 @@ const Chat = () => {
 
 	// Refetch tasks and comments when messages change and we're not streaming
 	useEffect(() => {
-		console.log("[Chat] useEffect triggered - status:", status, "messages:", messages.length);
+		console.log("[TaskChat] useEffect triggered - status:", status, "messages:", messages.length);
 		// Only refresh when not actively streaming and messages have changed
 		if (status !== "streaming" && status !== "submitted") {
 			const messageCount = messages.length;
 			if (messageCount > lastRefreshedCount.current) {
-				console.log("[Chat] Triggering refetch - count changed from", lastRefreshedCount.current, "to", messageCount);
+				console.log("[TaskChat] Triggering refetch - count changed from", lastRefreshedCount.current, "to", messageCount);
 				lastRefreshedCount.current = messageCount;
 				refetchTasks();
 				refetchComments();
@@ -378,4 +378,4 @@ const Chat = () => {
 	);
 };
 
-export default Chat;
+export default TaskChat;

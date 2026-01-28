@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiCommentsRouteImport } from './routes/api/comments'
@@ -16,6 +17,11 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiTasksIdRouteImport } from './routes/api/tasks.$id'
 import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
 
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const ApiCommentsIdRoute = ApiCommentsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/tasks': typeof TasksRoute
   '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/tasks': typeof TasksRoute
   '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/tasks': typeof TasksRoute
   '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/tasks'
     | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/tasks'
     | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/tasks'
     | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TasksRoute: typeof TasksRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiCommentsRoute: typeof ApiCommentsRouteWithChildren
   ApiTasksRoute: typeof ApiTasksRouteWithChildren
@@ -108,6 +121,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -179,6 +199,7 @@ const ApiTasksRouteWithChildren = ApiTasksRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TasksRoute: TasksRoute,
   ApiChatRoute: ApiChatRoute,
   ApiCommentsRoute: ApiCommentsRouteWithChildren,
   ApiTasksRoute: ApiTasksRouteWithChildren,
