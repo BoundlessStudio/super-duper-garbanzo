@@ -51,7 +51,6 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/store": "^0.8.0",
     "@xyflow/react": "^12.10.0",
-    "agentation": "^1.3.2",
     "ai": "^6.0.49",
     "ansi-to-react": "^6.2.6",
     "better-sqlite3": "^12.6.2",
