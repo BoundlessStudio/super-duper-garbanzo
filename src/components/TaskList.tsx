@@ -8,7 +8,7 @@ const TaskListInner = lazy(() => import("./TaskListInner"));
 
 const TaskListSkeleton = () => (
 	<div className="flex h-full flex-col gap-4">
-		<header className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm">
+		<header className="flex flex-col gap-3 ">
 			<div className="flex flex-wrap items-center gap-3">
 				<div>
 					<p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
@@ -21,7 +21,7 @@ const TaskListSkeleton = () => (
 			</div>
 		</header>
 
-		<div className="flex-1 overflow-auto rounded-xl border border-border/60 bg-card/80 shadow-sm">
+		<div className="flex-1 overflow-auto rounded-xl bg-card/80">
 			<ul className="divide-y divide-border/60">
 				{[1, 2, 3, 4, 5].map((i) => (
 					<li

@@ -143,7 +143,7 @@ const TaskListInner = () => {
 
 	return (
 		<div className="flex h-full flex-col gap-4">
-			<header className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-sm">
+			<header className="flex flex-col gap-3 ">
 				<div className="flex flex-wrap items-center gap-3">
 					<div>
 						<p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
@@ -156,7 +156,7 @@ const TaskListInner = () => {
 				</div>
 			</header>
 
-			<div className="flex-1 overflow-auto rounded-xl border border-border/60 bg-card/80 shadow-sm">
+			<div className="flex-1 overflow-auto rounded-xl bg-card/80">
 				{tasks.length === 0 ? (
 					<div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground p-4">
 						<p>No tasks yet.</p>
