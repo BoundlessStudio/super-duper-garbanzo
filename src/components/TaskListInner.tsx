@@ -11,7 +11,6 @@ import {
 	tasksCollection,
 	subscribeToTaskQuery,
 	getTaskQuery,
-	clearTaskQuery,
 } from "@/collections/db";
 import { cn } from "@/lib/utils";
 
@@ -154,15 +153,6 @@ const TaskListInner = () => {
 							Plan, assign, and track work
 						</h2>
 					</div>
-					{chatQuery && (
-						<button
-							onClick={() => clearTaskQuery()}
-							className="h-9 rounded-lg border border-primary/50 bg-primary/10 px-3 text-sm font-medium text-primary shadow-sm hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/40 flex items-center gap-2 ml-auto"
-						>
-							<span>Filtered by chat</span>
-							<span className="text-xs">✕</span>
-						</button>
-					)}
 				</div>
 			</header>
 

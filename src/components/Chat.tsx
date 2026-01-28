@@ -109,27 +109,33 @@ const getToolTitle = (toolName: string): string => {
 const Chat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
-	const { messages, sendMessage, status, regenerate } = useChat({
+	const { messages, sendMessage, status, regenerate, addToolOutput } = useChat({
 		onToolCall: async ({ toolCall }) => {
 			// Handle client-side tools
 			if (toolCall.toolName === "queryTasks") {
-				const args = toolCall.args as TaskQuery;
-				console.log("[Chat] queryTasks called with:", args);
-				setTaskQuery(args);
-				return {
+				const input = toolCall.input as TaskQuery;
+				console.log("[Chat] queryTasks called with:", input);
+				setTaskQuery(input);
+				const output = {
 					success: true,
 					message: "Task filter applied on client.",
-					query: args,
+					query: input,
 				};
+				// Explicitly add tool output for client-side tools
+				addToolOutput({ toolCallId: toolCall.toolCallId, tool: "queryTasks", output });
+				return;
 			}
 			if (toolCall.toolName === "clearTaskFilter") {
 				console.log("[Chat] clearTaskFilter called");
 				clearTaskQuery();
-				return {
+				const output = {
 					success: true,
 					action: "clear",
 					message: "Task filter cleared. Showing all tasks.",
 				};
+				// Explicitly add tool output for client-side tools
+				addToolOutput({ toolCallId: toolCall.toolCallId, tool: "clearTaskFilter", output });
+				return;
 			}
 		},
 	});
