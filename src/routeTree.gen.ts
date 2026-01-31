@@ -13,9 +13,9 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiCommentsRouteImport } from './routes/api/comments'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiTasksIdRouteImport } from './routes/api/tasks.$id'
 import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
+import { Route as ApiChatTaskRouteImport } from './routes/api/chat/task'
 
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
@@ -37,11 +37,6 @@ const ApiCommentsRoute = ApiCommentsRouteImport.update({
   path: '/api/comments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiTasksIdRoute = ApiTasksIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -52,22 +47,27 @@ const ApiCommentsIdRoute = ApiCommentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiCommentsRoute,
 } as any)
+const ApiChatTaskRoute = ApiChatTaskRouteImport.update({
+  id: '/api/chat/task',
+  path: '/api/chat/task',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
+  '/api/chat/task': typeof ApiChatTaskRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/tasks/$id': typeof ApiTasksIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
+  '/api/chat/task': typeof ApiChatTaskRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/tasks/$id': typeof ApiTasksIdRoute
 }
@@ -75,9 +75,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/comments': typeof ApiCommentsRouteWithChildren
   '/api/tasks': typeof ApiTasksRouteWithChildren
+  '/api/chat/task': typeof ApiChatTaskRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/tasks/$id': typeof ApiTasksIdRoute
 }
@@ -86,27 +86,27 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/tasks'
-    | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
+    | '/api/chat/task'
     | '/api/comments/$id'
     | '/api/tasks/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/tasks'
-    | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
+    | '/api/chat/task'
     | '/api/comments/$id'
     | '/api/tasks/$id'
   id:
     | '__root__'
     | '/'
     | '/tasks'
-    | '/api/chat'
     | '/api/comments'
     | '/api/tasks'
+    | '/api/chat/task'
     | '/api/comments/$id'
     | '/api/tasks/$id'
   fileRoutesById: FileRoutesById
@@ -114,9 +114,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TasksRoute: typeof TasksRoute
-  ApiChatRoute: typeof ApiChatRoute
   ApiCommentsRoute: typeof ApiCommentsRouteWithChildren
   ApiTasksRoute: typeof ApiTasksRouteWithChildren
+  ApiChatTaskRoute: typeof ApiChatTaskRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -149,13 +149,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCommentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/tasks/$id': {
       id: '/api/tasks/$id'
       path: '/$id'
@@ -169,6 +162,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/comments/$id'
       preLoaderRoute: typeof ApiCommentsIdRouteImport
       parentRoute: typeof ApiCommentsRoute
+    }
+    '/api/chat/task': {
+      id: '/api/chat/task'
+      path: '/api/chat/task'
+      fullPath: '/api/chat/task'
+      preLoaderRoute: typeof ApiChatTaskRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -200,9 +200,9 @@ const ApiTasksRouteWithChildren = ApiTasksRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TasksRoute: TasksRoute,
-  ApiChatRoute: ApiChatRoute,
   ApiCommentsRoute: ApiCommentsRouteWithChildren,
   ApiTasksRoute: ApiTasksRouteWithChildren,
+  ApiChatTaskRoute: ApiChatTaskRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

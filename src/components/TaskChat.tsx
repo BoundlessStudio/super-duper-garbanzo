@@ -1,8 +1,9 @@
 "use client";
 
+import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { refetchTasks, refetchComments, setTaskQuery, type TaskQuery } from "@/collections/db";
 import {
 	Attachment,
@@ -145,7 +146,12 @@ const hasTaskQueryCriteria = (query?: TaskQuery | null): query is TaskQuery => {
 const TaskChat = () => {
 	const [input, setInput] = useState("");
 	const [model, setModel] = useState<string>(models[0].value);
+	const chatTransport = useMemo(
+		() => new DefaultChatTransport({ api: "/api/chat/task" }),
+		[],
+	);
 	const { messages, sendMessage, status, regenerate, addToolOutput } = useChat({
+		transport: chatTransport,
 		onToolCall: async ({ toolCall }) => {
 			if (toolCall.toolName === "filterTaskList") {
 				const query = toolCall.input as TaskQuery | undefined;

@@ -10,7 +10,7 @@ import { openai } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import { db, tasks, comments, TASK_STATUSES, type Task } from "../../db";
+import { db, tasks, comments, TASK_STATUSES, type Task } from "../../../db";
 import { eq } from "drizzle-orm";
 
 // Tool parameter schemas
@@ -120,7 +120,7 @@ const FIELD_ACTIVITY_LABELS: Record<TaskUpdateField, string> = {
 	status: "Status Update",
 };
 
-export const Route = createFileRoute("/api/chat")({
+export const Route = createFileRoute("/api/chat/task")({
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
@@ -129,7 +129,7 @@ export const Route = createFileRoute("/api/chat")({
 					model,
 				}: {
 					messages: UIMessage[];
-					model: string;
+					model: string
 				} = await request.json();
 
 				const result = streamText({
@@ -170,7 +170,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 								dueDate,
 								status: resolvedStatus,
 								createdAt: new Date().toISOString(),
-							};
+							}
 							const result = await db.insert(tasks).values(newTask).returning();
 							const task = result[0];
 							return {
@@ -183,7 +183,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 										status: task.status,
 									},
 									message: `Created task "${name}" assigned to ${assignment}`,
-								};
+								}
 							},
 						}),
 						updateTask: tool({
@@ -192,7 +192,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 							inputSchema: zodSchema(updateTaskSchema),
 							execute: async (params) => {
 								const { taskId, name, description, assignment, dueDate, status } =
-									params;
+									params
 								const existing = await db
 									.select()
 									.from(tasks)
@@ -215,12 +215,12 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 										`${label} changed from ${truncateCommentText(oldValue)} to ${truncateCommentText(
 											newValue,
 										)}`,
-									);
-									changedFields.push(field);
-								};
+									)
+									changedFields.push(field)
+								}
 
 								if (name !== undefined) {
-									updates.name = name;
+									updates.name = name
 									if (name !== existingTask.name) {
 										recordChange("name", "Name", existingTask.name, name);
 									}
@@ -233,7 +233,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 											"Description",
 											existingTask.description,
 											description,
-										);
+										)
 									}
 								}
 								if (assignment !== undefined) {
@@ -244,17 +244,17 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 											"Assignment",
 											existingTask.assignment,
 											assignment,
-										);
+										)
 									}
 								}
 								if (dueDate !== undefined) {
-									updates.dueDate = dueDate;
+									updates.dueDate = dueDate
 									if (dueDate !== existingTask.dueDate) {
 										recordChange("dueDate", "Due date", existingTask.dueDate, dueDate);
 									}
 								}
 								if (status !== undefined) {
-									updates.status = status;
+									updates.status = status
 									if (status !== existingTask.status) {
 										recordChange("status", "Status", existingTask.status, status);
 									}
@@ -264,14 +264,14 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 									.update(tasks)
 									.set(updates)
 									.where(eq(tasks.id, taskId))
-									.returning();
+									.returning()
 								const updatedTask = result[0];
 
 								if (changeMessages.length > 0) {
 									const commentActivity =
 										changedFields.length === 1
 											? FIELD_ACTIVITY_LABELS[changedFields[0]]
-											: "Task Update";
+											: "Task Update"
 									await db.insert(comments).values({
 										id: nanoid(),
 										taskId,
@@ -279,14 +279,14 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 										note: changeMessages.join("; "),
 										date: new Date().toISOString(),
 										author: "System",
-									});
+									})
 								}
 
 								return {
 									success: true,
 									task: updatedTask,
 									message: `Updated task "${updatedTask.name}"`,
-								};
+								}
 							},
 						}),
 						removeTask: tool({
@@ -310,7 +310,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 								return {
 									success: true,
 									message: `Deleted task "${taskName}" and its associated comments`,
-								};
+								}
 							},
 						}),
 						listTasks: tool({
@@ -330,7 +330,7 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 										status: t.status,
 									})),
 									count: allTasks.length,
-								};
+								}
 							},
 						}),
 						filterTaskList: tool({
@@ -357,24 +357,24 @@ When users ask you to create or update tasks, use the appropriate tools. Always 
 									note,
 									date: new Date().toISOString(),
 									author,
-								};
+								}
 								const result = await db.insert(comments).values(newComment).returning();
 								const comment = result[0];
 								return {
 									success: true,
 									comment: { id: comment.id, taskId, note, author },
 									message: `Added comment to task "${task[0].name}"`,
-								};
+								}
 							},
 						}),
 					},
-				});
+				})
 
 				// send sources and reasoning back to the client
 				return result.toUIMessageStreamResponse({
 					sendSources: true,
 					sendReasoning: true,
-				});
+				})
 			},
 		},
 	},
