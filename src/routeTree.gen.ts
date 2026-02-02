@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTavusWebhookRouteImport } from './routes/api/tavus/webhook'
+import { Route as ApiTavusConversationsRouteImport } from './routes/api/tavus/conversations'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTavusWebhookRoute = ApiTavusWebhookRouteImport.update({
+  id: '/api/tavus/webhook',
+  path: '/api/tavus/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTavusConversationsRoute = ApiTavusConversationsRouteImport.update({
+  id: '/api/tavus/conversations',
+  path: '/api/tavus/conversations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/tavus/conversations': typeof ApiTavusConversationsRoute
+  '/api/tavus/webhook': typeof ApiTavusWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/tavus/conversations': typeof ApiTavusConversationsRoute
+  '/api/tavus/webhook': typeof ApiTavusWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/tavus/conversations': typeof ApiTavusConversationsRoute
+  '/api/tavus/webhook': typeof ApiTavusWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/tavus/conversations' | '/api/tavus/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/tavus/conversations' | '/api/tavus/webhook'
+  id: '__root__' | '/' | '/api/tavus/conversations' | '/api/tavus/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiTavusConversationsRoute: typeof ApiTavusConversationsRoute
+  ApiTavusWebhookRoute: typeof ApiTavusWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tavus/webhook': {
+      id: '/api/tavus/webhook'
+      path: '/api/tavus/webhook'
+      fullPath: '/api/tavus/webhook'
+      preLoaderRoute: typeof ApiTavusWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tavus/conversations': {
+      id: '/api/tavus/conversations'
+      path: '/api/tavus/conversations'
+      fullPath: '/api/tavus/conversations'
+      preLoaderRoute: typeof ApiTavusConversationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiTavusConversationsRoute: ApiTavusConversationsRoute,
+  ApiTavusWebhookRoute: ApiTavusWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
