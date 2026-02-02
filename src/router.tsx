@@ -13,7 +13,7 @@ export const getRouter = () => {
       <div className="mx-auto max-w-2xl px-4 py-12 text-center text-gray-200">
         <h1 className="text-2xl font-semibold">Page not found</h1>
         <p className="mt-2 text-gray-400">
-          The page you&apos;re looking for doesn&apos;t exist or has moved.
+          The page you're looking for doesn't exist or has moved.
         </p>
       </div>
     ),

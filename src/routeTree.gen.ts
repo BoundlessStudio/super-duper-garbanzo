@@ -9,170 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TasksRouteImport } from './routes/tasks'
-import { Route as MeetingsRouteImport } from './routes/meetings'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiTasksRouteImport } from './routes/api/tasks'
-import { Route as ApiMeetingsRouteImport } from './routes/api/meetings'
-import { Route as ApiCommentsRouteImport } from './routes/api/comments'
-import { Route as ApiTasksIdRouteImport } from './routes/api/tasks.$id'
-import { Route as ApiMeetingsIdRouteImport } from './routes/api/meetings.$id'
-import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
-import { Route as ApiChatTaskRouteImport } from './routes/api/chat/task'
 
-const TasksRoute = TasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeetingsRoute = MeetingsRouteImport.update({
-  id: '/meetings',
-  path: '/meetings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTasksRoute = ApiTasksRouteImport.update({
-  id: '/api/tasks',
-  path: '/api/tasks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMeetingsRoute = ApiMeetingsRouteImport.update({
-  id: '/api/meetings',
-  path: '/api/meetings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCommentsRoute = ApiCommentsRouteImport.update({
-  id: '/api/comments',
-  path: '/api/comments',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTasksIdRoute = ApiTasksIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiTasksRoute,
-} as any)
-const ApiMeetingsIdRoute = ApiMeetingsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiMeetingsRoute,
-} as any)
-const ApiCommentsIdRoute = ApiCommentsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiCommentsRoute,
-} as any)
-const ApiChatTaskRoute = ApiChatTaskRouteImport.update({
-  id: '/api/chat/task',
-  path: '/api/chat/task',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/meetings': typeof MeetingsRoute
-  '/tasks': typeof TasksRoute
-  '/api/comments': typeof ApiCommentsRouteWithChildren
-  '/api/meetings': typeof ApiMeetingsRouteWithChildren
-  '/api/tasks': typeof ApiTasksRouteWithChildren
-  '/api/chat/task': typeof ApiChatTaskRoute
-  '/api/comments/$id': typeof ApiCommentsIdRoute
-  '/api/meetings/$id': typeof ApiMeetingsIdRoute
-  '/api/tasks/$id': typeof ApiTasksIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/meetings': typeof MeetingsRoute
-  '/tasks': typeof TasksRoute
-  '/api/comments': typeof ApiCommentsRouteWithChildren
-  '/api/meetings': typeof ApiMeetingsRouteWithChildren
-  '/api/tasks': typeof ApiTasksRouteWithChildren
-  '/api/chat/task': typeof ApiChatTaskRoute
-  '/api/comments/$id': typeof ApiCommentsIdRoute
-  '/api/meetings/$id': typeof ApiMeetingsIdRoute
-  '/api/tasks/$id': typeof ApiTasksIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/meetings': typeof MeetingsRoute
-  '/tasks': typeof TasksRoute
-  '/api/comments': typeof ApiCommentsRouteWithChildren
-  '/api/meetings': typeof ApiMeetingsRouteWithChildren
-  '/api/tasks': typeof ApiTasksRouteWithChildren
-  '/api/chat/task': typeof ApiChatTaskRoute
-  '/api/comments/$id': typeof ApiCommentsIdRoute
-  '/api/meetings/$id': typeof ApiMeetingsIdRoute
-  '/api/tasks/$id': typeof ApiTasksIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/meetings'
-    | '/tasks'
-    | '/api/comments'
-    | '/api/meetings'
-    | '/api/tasks'
-    | '/api/chat/task'
-    | '/api/comments/$id'
-    | '/api/meetings/$id'
-    | '/api/tasks/$id'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/meetings'
-    | '/tasks'
-    | '/api/comments'
-    | '/api/meetings'
-    | '/api/tasks'
-    | '/api/chat/task'
-    | '/api/comments/$id'
-    | '/api/meetings/$id'
-    | '/api/tasks/$id'
-  id:
-    | '__root__'
-    | '/'
-    | '/meetings'
-    | '/tasks'
-    | '/api/comments'
-    | '/api/meetings'
-    | '/api/tasks'
-    | '/api/chat/task'
-    | '/api/comments/$id'
-    | '/api/meetings/$id'
-    | '/api/tasks/$id'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MeetingsRoute: typeof MeetingsRoute
-  TasksRoute: typeof TasksRoute
-  ApiCommentsRoute: typeof ApiCommentsRouteWithChildren
-  ApiMeetingsRoute: typeof ApiMeetingsRouteWithChildren
-  ApiTasksRoute: typeof ApiTasksRouteWithChildren
-  ApiChatTaskRoute: typeof ApiChatTaskRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tasks': {
-      id: '/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TasksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/meetings': {
-      id: '/meetings'
-      path: '/meetings'
-      fullPath: '/meetings'
-      preLoaderRoute: typeof MeetingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -180,102 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/tasks': {
-      id: '/api/tasks'
-      path: '/api/tasks'
-      fullPath: '/api/tasks'
-      preLoaderRoute: typeof ApiTasksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/meetings': {
-      id: '/api/meetings'
-      path: '/api/meetings'
-      fullPath: '/api/meetings'
-      preLoaderRoute: typeof ApiMeetingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/comments': {
-      id: '/api/comments'
-      path: '/api/comments'
-      fullPath: '/api/comments'
-      preLoaderRoute: typeof ApiCommentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/tasks/$id': {
-      id: '/api/tasks/$id'
-      path: '/$id'
-      fullPath: '/api/tasks/$id'
-      preLoaderRoute: typeof ApiTasksIdRouteImport
-      parentRoute: typeof ApiTasksRoute
-    }
-    '/api/meetings/$id': {
-      id: '/api/meetings/$id'
-      path: '/$id'
-      fullPath: '/api/meetings/$id'
-      preLoaderRoute: typeof ApiMeetingsIdRouteImport
-      parentRoute: typeof ApiMeetingsRoute
-    }
-    '/api/comments/$id': {
-      id: '/api/comments/$id'
-      path: '/$id'
-      fullPath: '/api/comments/$id'
-      preLoaderRoute: typeof ApiCommentsIdRouteImport
-      parentRoute: typeof ApiCommentsRoute
-    }
-    '/api/chat/task': {
-      id: '/api/chat/task'
-      path: '/api/chat/task'
-      fullPath: '/api/chat/task'
-      preLoaderRoute: typeof ApiChatTaskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
-interface ApiCommentsRouteChildren {
-  ApiCommentsIdRoute: typeof ApiCommentsIdRoute
-}
-
-const ApiCommentsRouteChildren: ApiCommentsRouteChildren = {
-  ApiCommentsIdRoute: ApiCommentsIdRoute,
-}
-
-const ApiCommentsRouteWithChildren = ApiCommentsRoute._addFileChildren(
-  ApiCommentsRouteChildren,
-)
-
-interface ApiMeetingsRouteChildren {
-  ApiMeetingsIdRoute: typeof ApiMeetingsIdRoute
-}
-
-const ApiMeetingsRouteChildren: ApiMeetingsRouteChildren = {
-  ApiMeetingsIdRoute: ApiMeetingsIdRoute,
-}
-
-const ApiMeetingsRouteWithChildren = ApiMeetingsRoute._addFileChildren(
-  ApiMeetingsRouteChildren,
-)
-
-interface ApiTasksRouteChildren {
-  ApiTasksIdRoute: typeof ApiTasksIdRoute
-}
-
-const ApiTasksRouteChildren: ApiTasksRouteChildren = {
-  ApiTasksIdRoute: ApiTasksIdRoute,
-}
-
-const ApiTasksRouteWithChildren = ApiTasksRoute._addFileChildren(
-  ApiTasksRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MeetingsRoute: MeetingsRoute,
-  TasksRoute: TasksRoute,
-  ApiCommentsRoute: ApiCommentsRouteWithChildren,
-  ApiMeetingsRoute: ApiMeetingsRouteWithChildren,
-  ApiTasksRoute: ApiTasksRouteWithChildren,
-  ApiChatTaskRoute: ApiChatTaskRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
