@@ -28,7 +28,32 @@ export const comments = sqliteTable("comments", {
 	author: text("author").notNull(),
 });
 
+export const MEETING_STATUSES = [
+	"Scheduled",
+	"Active",
+	"Completed",
+	"Cancelled",
+] as const;
+
+export type MeetingStatus = (typeof MEETING_STATUSES)[number];
+
+export const meetings = sqliteTable("meetings", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	meetingUrl: text("meeting_url").notNull(),
+	conversationId: text("conversation_id"),
+	status: text("status", { enum: MEETING_STATUSES }).notNull().default("Scheduled"),
+	participants: text("participants").notNull().default(""),
+	duration: text("duration"),
+	notes: text("notes").notNull().default(""),
+	recordingUrl: text("recording_url"),
+	scheduledAt: text("scheduled_at").notNull(),
+	createdAt: text("created_at").notNull(),
+});
+
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+export type Meeting = typeof meetings.$inferSelect;
+export type NewMeeting = typeof meetings.$inferInsert;

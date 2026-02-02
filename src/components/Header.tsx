@@ -17,6 +17,9 @@ export default function Header() {
             <Link to="/tasks" className="text-white hover:text-white">
               Tasks
             </Link>
+            <Link to="/meetings" className="hover:text-white">
+              Meetings
+            </Link>
           </nav>
         </div>
         <div className="flex items-center text-sm font-medium text-white/70">

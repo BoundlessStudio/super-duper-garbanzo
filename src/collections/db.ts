@@ -34,6 +34,27 @@ const commentZodSchema = z.object({
 	author: z.string().min(1),
 });
 
+export const MEETING_STATUSES = [
+	"Scheduled",
+	"Active",
+	"Completed",
+	"Cancelled",
+] as const;
+
+const meetingZodSchema = z.object({
+	id: z.string(),
+	title: z.string().min(1),
+	meetingUrl: z.string().min(1),
+	conversationId: z.string().optional(),
+	status: z.enum(MEETING_STATUSES),
+	participants: z.string().default(""),
+	duration: z.string().optional(),
+	notes: z.string().default(""),
+	recordingUrl: z.string().optional(),
+	scheduledAt: z.string(),
+	createdAt: z.string(),
+});
+
 const toStandardSchema = <T extends z.ZodTypeAny>(
 	schema: T,
 ): StandardSchemaV1<z.input<T>, z.output<T>> => ({
@@ -56,10 +77,13 @@ const toStandardSchema = <T extends z.ZodTypeAny>(
 
 const taskSchema = toStandardSchema(taskZodSchema);
 const commentSchema = toStandardSchema(commentZodSchema);
+const meetingSchema = toStandardSchema(meetingZodSchema);
 
 export type TaskStatus = (typeof TASK_STATUSES)[number];
+export type MeetingStatus = (typeof MEETING_STATUSES)[number];
 export type Task = z.infer<typeof taskZodSchema>;
 export type Comment = z.infer<typeof commentZodSchema>;
+export type Meeting = z.infer<typeof meetingZodSchema>;
 
 // Query state for filtering/sorting tasks from chat
 export type TaskQueryFilter = {
@@ -145,6 +169,30 @@ async function syncCommentToServer(comment: Comment, action: "insert" | "delete"
 	}
 }
 
+async function fetchMeetings(): Promise<Meeting[]> {
+	const response = await fetch("/api/meetings");
+	if (!response.ok) throw new Error("Failed to fetch meetings");
+	return response.json();
+}
+
+async function syncMeetingToServer(meeting: Meeting, action: "insert" | "update" | "delete"): Promise<void> {
+	if (action === "insert") {
+		await fetch("/api/meetings", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(meeting),
+		});
+	} else if (action === "update") {
+		await fetch(`/api/meetings/${meeting.id}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(meeting),
+		});
+	} else if (action === "delete") {
+		await fetch(`/api/meetings/${meeting.id}`, { method: "DELETE" });
+	}
+}
+
 // Use localOnlyCollectionOptions as base, we'll handle sync manually
 export const tasksCollection = createCollection(
 	localOnlyCollectionOptions<typeof taskSchema>({
@@ -162,6 +210,14 @@ export const commentsCollection = createCollection(
 	}),
 );
 
+export const meetingsCollection = createCollection(
+	localOnlyCollectionOptions<typeof meetingSchema>({
+		id: "meetings",
+		getKey: (meeting) => meeting.id,
+		schema: meetingSchema,
+	}),
+);
+
 // Initialize collections from server data
 let initialized = false;
 
@@ -171,9 +227,10 @@ export const startCollectionSync = async () => {
 
 	try {
 		// Fetch initial data from server
-		const [serverTasks, serverComments] = await Promise.all([
+		const [serverTasks, serverComments, serverMeetings] = await Promise.all([
 			fetchTasks(),
 			fetchComments(),
+			fetchMeetings(),
 		]);
 
 		// Populate collections with server data
@@ -182,6 +239,9 @@ export const startCollectionSync = async () => {
 		}
 		for (const comment of serverComments) {
 			commentsCollection.insert(comment);
+		}
+		for (const meeting of serverMeetings) {
+			meetingsCollection.insert(meeting);
 		}
 	} catch (error) {
 		console.error("Failed to sync with server:", error);
@@ -368,6 +428,95 @@ export const deleteComment = async (id: string) => {
 		console.error("Failed to sync comment deletion to server:", error);
 		// Rollback on error
 		commentsCollection.insert(existing);
+		throw error;
+	}
+};
+
+// Refetch meetings from server and sync to collection
+export const refetchMeetings = async () => {
+	try {
+		const serverMeetings = await fetchMeetings();
+		const serverMeetingIds = new Set(serverMeetings.map((m) => m.id));
+
+		const localMeetingIds = new Set(meetingsCollection.state.keys());
+
+		for (const meeting of serverMeetings) {
+			const existing = meetingsCollection.state.get(meeting.id);
+			if (existing) {
+				if (JSON.stringify(existing) !== JSON.stringify(meeting)) {
+					meetingsCollection.update(meeting.id, (draft) => {
+						Object.assign(draft, meeting);
+					});
+				}
+			} else {
+				meetingsCollection.insert(meeting);
+			}
+		}
+
+		for (const localId of localMeetingIds) {
+			if (!serverMeetingIds.has(String(localId))) {
+				meetingsCollection.delete(String(localId));
+			}
+		}
+	} catch (error) {
+		console.error("Failed to refetch meetings:", error);
+	}
+};
+
+export const createMeeting = async (options: {
+	title?: string;
+	conversationalContext?: string;
+	maxCallDuration?: number;
+}) => {
+	// Server handles Tavus API call and DB insert
+	const response = await fetch("/api/meetings", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(options),
+	});
+	if (!response.ok) throw new Error("Failed to create meeting");
+	const newMeeting: Meeting = await response.json();
+
+	// Add to local collection
+	meetingsCollection.insert(newMeeting);
+
+	return newMeeting;
+};
+
+export const updateMeeting = async (id: string, updates: Partial<Meeting>) => {
+	const existing = meetingsCollection.state.get(id);
+	if (!existing) throw new Error("Meeting not found");
+
+	const updatedMeeting = { ...existing, ...updates };
+
+	meetingsCollection.update(id, (draft) => {
+		Object.assign(draft, updates);
+	});
+
+	try {
+		await syncMeetingToServer(updatedMeeting, "update");
+	} catch (error) {
+		console.error("Failed to sync meeting update to server:", error);
+		meetingsCollection.update(id, (draft) => {
+			Object.assign(draft, existing);
+		});
+		throw error;
+	}
+
+	return updatedMeeting;
+};
+
+export const deleteMeeting = async (id: string) => {
+	const existing = meetingsCollection.state.get(id);
+	if (!existing) return;
+
+	meetingsCollection.delete(id);
+
+	try {
+		await syncMeetingToServer(existing, "delete");
+	} catch (error) {
+		console.error("Failed to sync meeting deletion to server:", error);
+		meetingsCollection.insert(existing);
 		throw error;
 	}
 };
