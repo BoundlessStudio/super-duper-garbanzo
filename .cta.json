@@ -12,9 +12,6 @@
     "biome",
     "nitro",
     "start",
-    "shadcn",
-    "db",
-    "store",
-    "tanstack-query"
+    "shadcn"
   ]
 }

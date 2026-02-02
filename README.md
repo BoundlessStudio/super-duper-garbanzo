@@ -1,4 +1,4 @@
-Welcome to your new TanStack app! 
+Welcome to your new TanStack app! This repo has been pared back to a basic Vite + TanStack Router setup (client-side routing), with the shadcn UI kit and AI element components kept for future integration.
 
 # Getting Started
 

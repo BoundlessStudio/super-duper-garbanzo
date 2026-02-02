@@ -1,33 +1,18 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 
 export default function Header() {
-  return (
-    <header className="w-full bg-gray-800 text-white shadow-lg">
-      <div className="flex w-full items-center justify-between gap-6 px-4 py-4 sm:px-8">
-        <div className="flex items-center gap-6">
-          <h1 className="text-xl font-semibold tracking-tight">
-            <Link to="/" className="hover:text-white">
-              super-duper-garbanzo
-            </Link>
-          </h1>
-          <nav className="flex items-center gap-5 text-sm font-medium text-white/70">
-            <Link to="/" className="hover:text-white">
-              Home
-            </Link>
-            <Link to="/tasks" className="text-white hover:text-white">
-              Tasks
-            </Link>
-            <Link to="/meetings" className="hover:text-white">
-              Meetings
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center text-sm font-medium text-white/70">
-          <Link to="/profile" className="hover:text-white">
-            Profile
-          </Link>
-        </div>
-      </div>
-    </header>
-  )
+	return (
+		<header className="w-full border-b border-slate-800 bg-slate-900/80 text-slate-50 backdrop-blur">
+			<div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
+				<Link to="/" className="text-lg font-semibold tracking-tight hover:text-white">
+					super-duper-garbanzo
+				</Link>
+				<nav className="flex items-center gap-4 text-sm font-medium text-slate-300">
+					<Link to="/" className="hover:text-white">
+						Home
+					</Link>
+				</nav>
+			</div>
+		</header>
+	);
 }
